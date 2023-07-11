@@ -4,6 +4,12 @@
 
 using std::string;
 
+string GetErrBuf(){
+    char* Buf;
+    ERR_error_string(ERR_get_error(), Buf);
+    return string(Buf);
+}
+
 bool MySSL::init(char* cert, char* key){
     SSL_library_init();
     OpenSSL_add_all_algorithms();

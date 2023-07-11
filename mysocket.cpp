@@ -11,14 +11,14 @@ static const map<scfg, const char*>ScfgStr{
 };
 
 static const map<const char*, scfg>SmapStr{
-    {"ip", scfg::Cert},
+    {"cert", scfg::Cert},
     {"key", scfg::Key},
     {"sock-port", scfg::Port},
     {"sock-que-size", scfg::QueSize}
 };
 
 static const map<scfg, string>SGetStr{
-    {scfg::Cert, "ip"},
+    {scfg::Cert, "cert"},
     {scfg::Key, "key"},
     {scfg::Port, "sock-port"},
     {scfg::QueSize, "sock-que-size"}
@@ -103,11 +103,7 @@ int MyTask::Run(){
 int MyTask::Receive(SSL* ssl, char* recv, string UserInfo){
     int len=SSL_read(ssl, recv, 1024);
     if(len==0)sock->_Log("链接失效！", level::Info);
-    if(len<0){
-        char* ErrBuf;
-        ERR_error_string(ERR_get_error(), ErrBuf);
-        sock->_Log(string(ErrBuf), level::Error, UserInfo);
-    }
+    if(len<0)sock->_Log(GetErrBuf(), level::Error, UserInfo);
     return len;
 }
 
@@ -115,16 +111,13 @@ MySocket::MySocket(Logger* _L, MysqlPool* _db){
     //init
     mLog=_L;
     db=_db;
+    Init();
     //socket
     WORD ver=MAKEWORD(2, 2);
-    Init();
     Pool=new CThreadPool(QueueSize);
     ssl=new MySSL;
     if(!ssl->init(cert, _key)){
-        char* ErrBuf;
-        string tmp;
-        ERR_error_string(ERR_get_error(), ErrBuf);
-        _Log(string(ErrBuf), level::Error);
+        _Log(GetErrBuf(), level::Error);
         exit(0);
     }
     else _Log("SSL载入成功！", level::Info);

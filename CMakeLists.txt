@@ -55,16 +55,17 @@ endif()
 # all listed variables are TRUE
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args( MYSQL DEFAULT_MSG
-	MYSQL_LIBRARY MYSQL_INCLUDE_DIR
-	MYSQL_VERSION_STRING )
+	MYSQL_LIBRARY MYSQL_INCLUDE_DIR)
 
 set(MYSQL_INCLUDE_DIRS ${MYSQL_INCLUDE_DIR})
 set(MYSQL_LIBRARIES ${MYSQL_LIBRARY})
 
 set(OPENSSL_ROOT_DIR "${CMAKE_SOURCE_DIR}/openssl")
 set(OPENSSL_USE_STATIC_LIBS TRUE)
+set(CMAKE_AR gcc-ar)
 find_package(OpenSSL REQUIRED)
-target_compile_options(MySocket PRIVATE -fdiagnostics-color=always -pedantic -lssl -ldl -O3)
+target_compile_options(MySocket PRIVATE -fdiagnostics-color=always -lcrypto -pedantic -lssl -ldl -flto -O3)
+target_link_options(MySocket PRIVATE -flto -s)
 
 if(OpenSSL_FOUND)
 target_include_directories(MySocket PRIVATE ${OPENSSL_INCLUDE_DIR} ${MYSQL_INCLUDE_DIR})
@@ -72,8 +73,3 @@ target_link_libraries(MySocket PRIVATE ${OPENSSL_LIBRARIES} ${MYSQL_LIBRARIES} w
 else(OpenSSL_FOUND)
     message(FATAL_ERROR "OpenSSL not found")
 endif(OpenSSL_FOUND)
-
-if(NOT (${CMAKE_BUILD_TYPE} STREQUAL Debug))
-target_compile_options(MySocket PRIVATE -flto)
-target_link_options(MySocket PRIVATE -flto -s)
-endif(NOT (${CMAKE_BUILD_TYPE} STREQUAL Debug))
