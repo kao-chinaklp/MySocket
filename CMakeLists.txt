@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.23)
 
 # set the project name
-# project(client)
 project(MySocket)
 
 # specify the C++ standard
@@ -10,7 +9,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(EXPORT_COMPILE_COMMANDS ON)
 
 # add the executable
-# add_executable(client client.cpp)
 add_executable(MySocket account.cpp mysocket.cpp connection.cpp mysqlpool.cpp myssl.cpp logger.cpp thread.cpp service.cpp main.cpp)
 
 if(MINGW)
@@ -66,12 +64,9 @@ set(MYSQL_LIBRARIES ${MYSQL_LIBRARY})
 set(OPENSSL_ROOT_DIR "${CMAKE_SOURCE_DIR}/openssl")
 set(OPENSSL_USE_STATIC_LIBS TRUE)
 find_package(OpenSSL REQUIRED)
-# target_compile_options(client PRIVATE -fdiagnostics-color=always -pedantic -lssl -ldl)
-target_compile_options(MySocket PRIVATE -fdiagnostics-color=always -pedantic -lssl -ldl -Og)
+target_compile_options(MySocket PRIVATE -fdiagnostics-color=always -pedantic -lssl -ldl -O3)
 
 if(OpenSSL_FOUND)
-# target_include_directories(client PRIVATE ${OPENSSL_INCLUDE_DIR} ${MYSQL_INCLUDE_DIR})
-# target_link_libraries(client PRIVATE ${OPENSSL_LIBRARIES} ${MYSQL_LIBRARIES} ws2_32 Crypt32 pthread)
 target_include_directories(MySocket PRIVATE ${OPENSSL_INCLUDE_DIR} ${MYSQL_INCLUDE_DIR})
 target_link_libraries(MySocket PRIVATE ${OPENSSL_LIBRARIES} ${MYSQL_LIBRARIES} winmm ws2_32 Crypt32 pthread)
 else(OpenSSL_FOUND)
