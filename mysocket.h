@@ -51,8 +51,8 @@ class MySocket{
         SOCKADDR_IN accept_addr;
         CThreadPool* Pool;
         int Port;
-        char* cert;
-        char* _key;
+        string cert;
+        string _key;
         int QueueSize;
         regex pattern;
         std::smatch res;

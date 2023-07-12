@@ -7,14 +7,13 @@ using std::ios;
 using std::map;
 
 static const map<cfg, const char*>CfgStr{
-    {cfg::IP, "((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)"},
-    {cfg::UserName, "/^[-_a-zA-Z0-9]{4,16}$/"},
-    {cfg::PassWord, "/(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[$@!%*#?&])[A-Za-z\d$@!%*#?&]{6,}$/"},
-    {cfg::DBName, "/(^_([a-zA-Z0-9]_?)*$)|(^[a-zA-Z](_?[a-zA-Z0-9])*_?$)/"},
-    {cfg::Port, "([0-9]|[1-9]\d{1,3}|[1-5]\d{4}|6[0-4]\d{3}|65[0-4]\d{2}|655[0-2]\d|6553[0-5])"}
+    {cfg::IP, "^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$"},
+    {cfg::UserName, "^[-_a-zA-Z0-9]{4,16}$"},
+    {cfg::PassWord, "^[A-Za-z\\d!@#$%^&*.]{8,}$"},
+    {cfg::DBName, "^[a-zA-Z0-9_]+$"}
 };
 
-static const map<const char*, cfg>MapStr{
+static const map<string, cfg>MapStr{
     {"ip", cfg::IP},
     {"username", cfg::UserName},
     {"password", cfg::PassWord},
@@ -71,6 +70,7 @@ MysqlPool::MysqlPool(Logger* _L){
     file.open("config.ini", ios::in);
     if(file.fail()){
         nLog->Output("读取配置文件失败！", level::Fatal);
+        nLog->Close();
         exit(0);
     }
     while(getline(file, line)){
@@ -79,8 +79,10 @@ MysqlPool::MysqlPool(Logger* _L){
         int EndIdx=line.find('\n', Idx);
         string key=line.substr(0, Idx);
         string value=line.substr(Idx+1, EndIdx-Idx-1);
-        if(!IsLegal(value, MapStr.find(key.c_str())->second)){
+        if(MapStr.find(key)==MapStr.end())continue;
+        if(!IsLegal(value, MapStr.find(key)->second)){
             nLog->Output("请检查 "+key+" 项是否填写正确！", level::Fatal);
+            nLog->Close();
             exit(0);
         }
         if(key=="ip")IP=value;
@@ -90,18 +92,31 @@ MysqlPool::MysqlPool(Logger* _L){
         else if(key=="db-port")Port=atoi(value.c_str());
         else if(key=="db-que-size")QueueSize=atoi(value.c_str());
         else continue;
-        Flag[MapStr.find(key.c_str())->second]=true;
+        Flag[MapStr.find(key)->second]=true;
     }
     for(auto &i:Flag)
         if(i.second==false){
             nLog->Output("请检查 "+GetStr.find(i.first)->second+" 项是否填写正确！", level::Fatal);
+            nLog->Close();
             exit(0);
         }
+    db=new Connection;
+    Pool=new CThreadPool;
+    if(db->Connect(IP, Port, UserName, PassWord, DBName))nLog->Output("数据库连接成功！", level::Info);
+    else{
+        nLog->Output("数据库连接失败！错误码："+to_string(db->GetError()), level::Fatal);
+        nLog->Close();
+        exit(0);
+    }
 }
 
 bool MysqlPool::IsLegal(string str, cfg type){
     if(type==cfg::QueSize){
         if(atoi(str.c_str())<=0)return false;
+        return true;
+    }
+    if(type==cfg::Port){
+        if(atoi(str.c_str())<=0||atoi(str.c_str())>65535)return false;
         return true;
     }
     pattern=regex(CfgStr.find(type)->second);
@@ -111,6 +126,7 @@ bool MysqlPool::IsLegal(string str, cfg type){
 
 void MysqlPool::ShutDown(){
     Pool->StopAll();
+    nLog->Output("数据库连接已断开。", level::Info);
 }
 
 int MysqlPool::Operate(string sql, op _t, string _username, const char* _password, bool* _s, bool mode){

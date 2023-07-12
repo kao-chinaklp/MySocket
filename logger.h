@@ -80,6 +80,7 @@ namespace logger{
 	class Logger{
 		public:
 			Logger(int queue_size=5);
+            void Close();
 			void Output(string msg, level nLevel);
 
 		private:

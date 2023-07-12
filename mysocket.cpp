@@ -4,13 +4,12 @@ using std::ios;
 using std::map;
 using std::to_string;
 
-static const map<scfg, const char*>ScfgStr{
-    {scfg::Cert, "[^*|\\:\"<>?/]+\\.[^*|\\:\"<>?/\u4E00-\u9FA5]+"},
-    {scfg::Key, "[^*|\\:\"<>?/]+\\.[^*|\\:\"<>?/\u4E00-\u9FA5]+"},
-    {scfg::Port, "([0-9]|[1-9]\d{1,3}|[1-5]\d{4}|6[0-4]\d{3}|65[0-4]\d{2}|655[0-2]\d|6553[0-5])"}
+static map<scfg, const char*>ScfgStr{
+    {scfg::Cert, ""},
+    {scfg::Key, ""}
 };
 
-static const map<const char*, scfg>SmapStr{
+static const map<string, scfg>SmapStr{
     {"cert", scfg::Cert},
     {"key", scfg::Key},
     {"sock-port", scfg::Port},
@@ -41,6 +40,8 @@ int MyTask::Run(){
     SSL_set_fd(ssl, connfd);
     if(SSL_accept(ssl)<=0){
         sock->_Log("连接失败！", level::Warn);
+        SSL_shutdown(ssl);
+        SSL_free(ssl);
         #ifdef __linux__
         close(connfd);
         #else
@@ -118,6 +119,7 @@ MySocket::MySocket(Logger* _L, MysqlPool* _db){
     ssl=new MySSL;
     if(!ssl->init(cert, _key)){
         _Log(GetErrBuf(), level::Error);
+        this->Close();
         exit(0);
     }
     else _Log("SSL载入成功！", level::Info);
@@ -125,6 +127,7 @@ MySocket::MySocket(Logger* _L, MysqlPool* _db){
     if(WSAStartup(ver, &data))_Log("创建失败！", level::Fatal);
     if(LOBYTE(data.wVersion)!=2||HIBYTE(data.wHighVersion)!=2){
         _Log("版本不符！", level::Fatal);
+        this->Close();
         WSACleanup();
         exit(0);
     }
@@ -143,27 +146,43 @@ void MySocket::Init(){
     file.open("config.ini", ios::in);
     if(file.fail()){
         _Log("读取配置文件失败！", level::Fatal);
+        this->Close();
         exit(0);
     }
+    #ifdef __linux__
+    ScfgStr[scfg::Cert]=ScfgStr[scfg::Key]="^[a-zA-Z0-9_\\-\\.]+\\.[a-zA-Z0-9]+$";
+    #else
+    ScfgStr[scfg::Cert]=ScfgStr[scfg::Key]="^[^<>:\"/\\\\|?*\\r\\n]+$";
+    #endif
     while(getline(file, line)){
         int Idx=line.find('=');
         if(Idx==-1)continue;
         int EndIdx=line.find('\n', Idx);
         string key=line.substr(0, Idx);
         string value=line.substr(Idx+1, EndIdx-Idx-1);
-        if(!IsLegal(value, SmapStr.find(key.c_str())->second)){
+        if(SmapStr.find(key)==SmapStr.end())continue;
+        if(!IsLegal(value, SmapStr.find(key)->second)){
             _Log("请检查 "+key+" 项是否填写正确！", level::Fatal);
+            this->Close();
             exit(0);
         }
-        if(key=="cert")strcpy(cert, value.c_str());
-        else if(key=="key")strcpy(_key, value.c_str());
+        if(key=="cert"){
+            if(value.empty())value="cacert.pem";
+            cert=value;
+        }
+        else if(key=="key"){
+            if(value.empty())value="privkey.pem";
+            _key=value;
+        }
         else if(key=="sock-port")Port=atoi(value.c_str());
-        else if(key=="que-size")QueueSize=atoi(value.c_str());
-        Flag[SmapStr.find(key.c_str())->second]=true;
+        else if(key=="sock-que-size")QueueSize=atoi(value.c_str());
+        else continue;
+        Flag[SmapStr.find(key)->second]=true;
     }
     for(auto &i:Flag)
         if(i.second==false){
             _Log("请检查 "+SGetStr.find(i.first)->second+" 项是否填写正确！", level::Fatal);
+            this->Close();
             exit(0);
         }
 }
@@ -176,13 +195,20 @@ void MySocket::_Log(string msg, level Level, string UserName){
 void MySocket::Close(){
     _Log("正在关闭服务。", level::Info);
     ssl->ShutDown();
+    _Log("套接字已关闭。", level::Info);
     db->ShutDown();
+    mLog->Close();
     delete ssl;
 }
 
 bool MySocket::IsLegal(string str, scfg type){
+    if(type==scfg::Cert&&str.empty()||type==scfg::Key&&str.empty())return true;
     if(type==scfg::QueSize){
         if(atoi(str.c_str())<=0)return false;
+        return true;
+    }
+    if(type==scfg::Port){
+        if(atoi(str.c_str())<=0||atoi(str.c_str())>65536)return false;
         return true;
     }
     pattern=regex(ScfgStr.find(type)->second);
@@ -211,7 +237,7 @@ int MySocket::Run(int type){
         Close();
         return -1;
     }
-    else _Log("正在监听"+to_string(Port)+"端口", level::Info);
+    else _Log("套接字启动成功！正在监听"+to_string(Port)+"端口", level::Info);
     int len=sizeof(SOCKADDR);
     while(true){
         s_accept=accept(server, (SOCKADDR*)&accept_addr, &len);

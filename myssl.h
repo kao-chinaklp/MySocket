@@ -15,7 +15,7 @@ class MySSL{
         void ShutDown();
         SSL_CTX* GetCTX();
         unsigned int GetError();
-        bool init(char* cert, char* key);
+        bool init(string cert, string key);
 
     private:
         SSL_CTX* ctx;

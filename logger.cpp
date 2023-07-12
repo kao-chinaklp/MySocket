@@ -3,6 +3,7 @@
 #include <map>
 #include <regex>
 #include <cstdlib>
+#include <filesystem>
 
 using std::map;
 using std::ios;
@@ -12,6 +13,7 @@ using std::fstream;
 using std::regex_replace;
 
 using namespace logger;
+using namespace std::filesystem;
 
 static const map<level, const char*>LevelStr{
     {level::Debug, "Debug"},
@@ -56,7 +58,7 @@ FileLogger::FileLogger(string _Time):Log(){
     string _FileName(FileName.size(), '\0');
     regex express("/|:| |>|<|\"|\\*|\\?|\\|");
     regex_replace(_FileName.begin(), FileName.begin(), FileName.end(), express, "-");
-    _File.open(_FileName, ios::app);
+    _File.open("./logs/"+_FileName, ios::app);
     if(!_File.is_open()){
         printf("无法打开日志文件！");
         exit(0);
@@ -66,6 +68,11 @@ FileLogger::FileLogger(string _Time):Log(){
 FileLogger::~FileLogger(){
     _File.flush();
     _File.close();
+}
+
+void Logger::Close(){
+    Output("日志系统正在关闭。", level::Info);
+    Pool->StopAll();
 }
 
 void FileLogger::Output(const char* tm, const char* nLevel, const char* msg){
@@ -85,6 +92,8 @@ void MyLog::GetInfo(string _msg, level _Level){
 }
 
 Logger::Logger(int queue_size){
+    path folder=current_path()/"logs";
+    create_directory(folder);
 	QueueSize=queue_size;
 	Pool=new CThreadPool(QueueSize);
 	char str[20]={0};
