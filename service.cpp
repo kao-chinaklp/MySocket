@@ -33,7 +33,8 @@ Service::Service() {
     OpenSSL_add_all_algorithms();
     ERR_load_crypto_strings();
     EVP_PKEY_CTX *ctx = EVP_PKEY_CTX_new_id(EVP_PKEY_RSA, NULL);
-    EVP_PKEY *pkey;
+    const EVP_CIPHER *cipher = EVP_aes_256_cfb128();
+    EVP_PKEY *pkey = nullptr;
     try {
         if (!ctx)
             throw GetErrBuf();
@@ -86,21 +87,20 @@ Service::Service() {
         goto nxt;
     PublicKey = fopen(cert.c_str(), "w");
     PrivateKey = fopen(_key.c_str(), "w");
-    if (!EVP_PKEY_print_public_fp(PublicKey, pkey, 0, NULL)) {
+    if (!PEM_write_PUBKEY(PublicKey, pkey)) {
         nLog.Output(GetErrBuf(), level::Error);
         nLog.Close();
         exit(0);
     }
-    if (!EVP_PKEY_print_private_fp(PrivateKey, pkey, 0, NULL)) {
+    if (!PEM_write_PrivateKey(PrivateKey, pkey, cipher, nullptr, 0, nullptr,
+                              nullptr)) {
         nLog.Output(GetErrBuf(), level::Error);
         nLog.Close();
         exit(0);
     }
-    testcert.close();
-    testkey.close();
-nxt:
     fclose(PublicKey);
     fclose(PrivateKey);
+nxt:
     EVP_cleanup();
     db = MysqlPool(&nLog);
     sock = MySocket(&nLog, &db);
