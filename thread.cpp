@@ -32,7 +32,7 @@ void* ThreadFunc(void* threadData){
         //没有任务，等待执行
         while(Data->queTaskList.empty()&&!Data->shutdown)
             pthread_cond_wait(&Data->pthreadCond, &Data->pthreadMutex);
-        if(Data->shutdown){
+        if(Data->queTaskList.empty()&&Data->shutdown){
             pthread_mutex_unlock(&Data->pthreadMutex);
             pthread_exit(NULL);
         }
