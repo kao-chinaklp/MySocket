@@ -1,5 +1,8 @@
 #include "thread.h"
 
+#include <chrono>
+#include <thread>
+
 void CTask::SetConnFd(int data){
     connfd=data;
 }
@@ -24,6 +27,12 @@ CThreadPool::CThreadPool(int threadNum){
     Create();
 }
 
+CThreadPool::~CThreadPool(){
+    StopAll();
+    pthread_mutex_destroy(&pthreadMutex);
+    pthread_cond_destroy(&pthreadCond);
+}
+
 void* ThreadFunc(void* threadData){
     CThreadPool* Data=(CThreadPool*)threadData;
     pthread_t tid=pthread_self();
@@ -36,15 +45,32 @@ void* ThreadFunc(void* threadData){
             pthread_mutex_unlock(&Data->pthreadMutex);
             pthread_exit(NULL);
         }
-
         CTask* task=Data->queTaskList.front();
         Data->queTaskList.pop_front();
         //取完任务后放锁
         pthread_mutex_unlock(&Data->pthreadMutex);
+        Data->MoveToBusy(tid);
         task->Run();
         delete task;
+        Data->MoveToIdle(tid);
     }
     return (void*)0;
+}
+
+int CThreadPool::MoveToIdle(pthread_t tid){
+    deque<pthread_t>::iterator p=find(tid);
+    if(p==BusyQue.end())return -1;
+    pthread_mutex_lock(&pthreadMutex);
+    BusyQue.erase(p);
+    pthread_mutex_unlock(&pthreadMutex);
+    return 1;
+}
+
+int CThreadPool::MoveToBusy(pthread_t tid){
+    pthread_mutex_lock(&pthreadMutex);
+    BusyQue.push_back(tid);
+    pthread_mutex_unlock(&pthreadMutex);
+    return 1;
 }
 
 int CThreadPool::AddTask(CTask *task){
@@ -63,17 +89,42 @@ int CThreadPool::Create(){
     return 0;
 }
 
+void CThreadPool::Sleep(int ms){
+    std::this_thread::sleep_for(std::chrono::milliseconds(ms));
+}
+
+deque<pthread_t>::iterator CThreadPool::find(pthread_t tid){
+    deque<pthread_t>::iterator p;
+    pthread_mutex_lock(&pthreadMutex);
+    for(p=BusyQue.begin();p!=BusyQue.end();p++)
+        if(*p==tid)break;
+    pthread_mutex_unlock(&pthreadMutex);
+    return p;
+}
+
 int CThreadPool::StopAll(){
     if(shutdown)return -1;
     shutdown=true;
     pthread_cond_broadcast(&pthreadCond);
+    deque<pthread_t>NoJoined;
     //阻塞所有线程
-    for(int i=0;i<TaskNum;i++)
+    for(int i=0;i<TaskNum;i++){
+        if(find(pthread_id[i])!=BusyQue.end()){
+            NoJoined.push_back(pthread_id[i]);
+            continue;
+        }
         pthread_join(pthread_id[i], NULL);
+    }
+    while(!NoJoined.empty()){
+        for(deque<pthread_t>::iterator p=NoJoined.begin();p!=NoJoined.end();p++)
+            if(find(*p)==BusyQue.end()){
+                pthread_join(*p, NULL);
+                p=NoJoined.erase(p);
+            }
+        this->Sleep(50);
+    }
     free(pthread_id);
     pthread_id=NULL;
-    pthread_mutex_destroy(&pthreadMutex);
-    pthread_cond_destroy(&pthreadCond);
     return 0;
 }
 

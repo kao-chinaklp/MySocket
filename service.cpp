@@ -12,6 +12,17 @@ using std::map;
 
 string key_psw;
 
+Service::Service(){
+	nLog=new Logger(5);
+	nLog->Output("日志系统启动成功！", level::Info);
+}
+
+Service::~Service(){
+	delete sock;
+	delete db;
+	delete nLog;
+}
+
 int PasswordCallback(char* buf, int size, int flag, void* userdata){
 	int len=key_psw.size();
 	if(len<size){
@@ -21,10 +32,8 @@ int PasswordCallback(char* buf, int size, int flag, void* userdata){
 	return 0;
 }
 
-Service::Service(){
-	nLog=Logger(5);
-	nLog.Output("日志系统启动成功！", level::Info);
-	// init config
+void Service::Init(){
+	//检测配置文件
 	ifstream ifile;
 	ofstream ofile;
 	ifile.open("config.ini", ios::in);
@@ -39,9 +48,8 @@ Service::Service(){
     string line;
 	file.open("config.ini", ios::in);
     if(file.fail()){
-        nLog.Output("读取配置文件失败！", level::Fatal);
-        nLog.Close();
-        exit(0);
+        nLog->Output("读取配置文件失败！", level::Fatal);
+        throw 0;
     }
     while(getline(file, line)){
         int Idx=line.find('=');
@@ -54,12 +62,12 @@ Service::Service(){
 		else if(key=="key-psw")key_psw=value;
     }
 	file.close();
+	//检测证书文件
 	if(cert.empty()||_key.empty()){
 		cert="cacert.pem";
 		_key="privkey.pem";
 	}
 	if(key_psw.empty())key_psw="123456";
-	//init key&crt
 	OpenSSL_add_all_algorithms();
 	ERR_load_crypto_strings();
 	EVP_PKEY_CTX* ctx=nullptr;
@@ -76,7 +84,7 @@ Service::Service(){
 		}
 		if(PublicKey||PrivateKey){
 			fclose(PublicKey?PublicKey:PrivateKey);
-			nLog.Output("密钥文件不完整，正在重新生成...", level::Warn);
+			nLog->Output("密钥文件不完整，正在重新生成...", level::Warn);
 		}
 		ctx=EVP_PKEY_CTX_new_id(EVP_PKEY_RSA, NULL);
 		const EVP_CIPHER* chiper=EVP_aes_256_cfb128();
@@ -85,37 +93,34 @@ Service::Service(){
 			if(EVP_PKEY_keygen_init(ctx)==0)throw GetErrBuf();
 			if(EVP_PKEY_CTX_set_rsa_keygen_bits(ctx, 1024)<=0)throw GetErrBuf();
 			if(EVP_PKEY_keygen(ctx, &pkey)<=0)throw GetErrBuf();
-			EVP_PKEY_CTX_free(ctx);
 		}
 		catch(string buf){
-			nLog.Output(buf, level::Error);
+			nLog->Output(buf, level::Error);
 			EVP_PKEY_CTX_free(ctx);
-			exit(0);
+			throw 0;
 		}
 		PublicKey=fopen(cert.c_str(), "w");
 		PrivateKey=fopen(_key.c_str(), "w");
 		if(!PEM_write_PUBKEY(PublicKey, pkey)){
-			nLog.Output(GetErrBuf(), level::Error);
-			nLog.Close();
-			exit(0);
+			nLog->Output(GetErrBuf(), level::Error);
+			throw 0;
 		}
 		if(!PEM_write_PrivateKey(PrivateKey, pkey, chiper
 								, nullptr, 0, PasswordCallback, nullptr)){
-			nLog.Output(GetErrBuf(), level::Error);
-			nLog.Close();
-			exit(0);
+			nLog->Output(GetErrBuf(), level::Error);
+			throw 0;
 		}
 		fclose(PublicKey);
 		fclose(PrivateKey);
 		EVP_PKEY_free(pkey);
 		EVP_PKEY_CTX_free(ctx);
-		nLog.Output("证书成功生成！", level::Info);
+		nLog->Output("证书成功生成！", level::Info);
 	}
-	db=MysqlPool(&nLog);
-	sock=MySocket(&nLog, &db);
+	db=new MysqlPool(nLog);
+	sock=new MySocket(nLog, db);
 }
 
 int Service::Run(int type){
-	sock.Run(type); 
+	sock->Run(type); 
 	return 0;
 }

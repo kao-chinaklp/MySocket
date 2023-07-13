@@ -48,7 +48,8 @@ class MysqlPool{
     public:
         MysqlPool(){}
         MysqlPool(Logger* _L);
-        void ShutDown();
+        ~MysqlPool();
+        void Close();
         bool IsLegal(string str, cfg type);
         int Operate(string sql, op _t, string _username, const char* _password, bool* _s, bool mode);
 

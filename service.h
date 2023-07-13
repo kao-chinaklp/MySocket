@@ -8,13 +8,15 @@
 class Service{
 	public:
 		Service();
+		~Service();
+		void Init();
 		int Run(int type);
 		
 	private:
 		string DefaultConfig;
-		Logger nLog;
-		MysqlPool db;
-		MySocket sock;
+		Logger* nLog;
+		MysqlPool* db;
+		MySocket* sock;
 };
 
 #endif

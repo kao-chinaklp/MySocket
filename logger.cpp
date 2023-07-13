@@ -61,7 +61,7 @@ FileLogger::FileLogger(string _Time):Log(){
     _File.open("./logs/"+_FileName, ios::app);
     if(!_File.is_open()){
         printf("无法打开日志文件！");
-        exit(0);
+        throw 0;
     }
 }
 
@@ -103,6 +103,10 @@ Logger::Logger(int queue_size){
 	    time_tm->tm_year+1900, time_tm->tm_mon+1, time_tm->tm_mday, 
 	    time_tm->tm_hour, time_tm->tm_min, time_tm->tm_sec);
 	for(int i=0;i<19;i++)StartTime.push_back(str[i]);
+}
+
+Logger::~Logger(){
+    Close();
 }
 
 void Logger::Output(string msg, level nLevel){

@@ -70,8 +70,7 @@ MysqlPool::MysqlPool(Logger* _L){
     file.open("config.ini", ios::in);
     if(file.fail()){
         nLog->Output("读取配置文件失败！", level::Fatal);
-        nLog->Close();
-        exit(0);
+        throw 0;
     }
     while(getline(file, line)){
         int Idx=line.find('=');
@@ -82,8 +81,7 @@ MysqlPool::MysqlPool(Logger* _L){
         if(MapStr.find(key)==MapStr.end())continue;
         if(!IsLegal(value, MapStr.find(key)->second)){
             nLog->Output("请检查 "+key+" 项是否填写正确！", level::Fatal);
-            nLog->Close();
-            exit(0);
+            throw 0;
         }
         if(key=="ip")IP=value;
         else if(key=="username")UserName=value;
@@ -97,17 +95,19 @@ MysqlPool::MysqlPool(Logger* _L){
     for(auto &i:Flag)
         if(i.second==false){
             nLog->Output("请检查 "+GetStr.find(i.first)->second+" 项是否填写正确！", level::Fatal);
-            nLog->Close();
-            exit(0);
+            throw 0;
         }
     db=new Connection;
     Pool=new CThreadPool;
     if(db->Connect(IP, Port, UserName, PassWord, DBName))nLog->Output("数据库连接成功！", level::Info);
     else{
         nLog->Output("数据库连接失败！错误码："+to_string(db->GetError()), level::Fatal);
-        nLog->Close();
-        exit(0);
+        throw 0;
     }
+}
+
+MysqlPool::~MysqlPool(){
+    Close();
 }
 
 bool MysqlPool::IsLegal(string str, cfg type){
@@ -124,7 +124,7 @@ bool MysqlPool::IsLegal(string str, cfg type){
     return false;
 }
 
-void MysqlPool::ShutDown(){
+void MysqlPool::Close(){
     Pool->StopAll();
     nLog->Output("数据库连接已断开。", level::Info);
 }

@@ -33,7 +33,7 @@ SSL_CTX* MySSL::GetCTX(){
     return ctx;
 }
 
-void MySSL::ShutDown(){
+void MySSL::Close(){
     SSL_CTX_free(ctx);
     EVP_cleanup();
     CRYPTO_cleanup_all_ex_data();

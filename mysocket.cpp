@@ -114,23 +114,25 @@ MySocket::MySocket(Logger* _L, MysqlPool* _db){
     db=_db;
     Init();
     //socket
-    WORD ver=MAKEWORD(2, 2);
     Pool=new CThreadPool(QueueSize);
     ssl=new MySSL;
     if(!ssl->init(cert, _key)){
         _Log(GetErrBuf(), level::Error);
         this->Close();
-        exit(0);
+        throw 0;
     }
     else _Log("SSL载入成功！", level::Info);
+    #ifdef _WIN32
+    WORD ver=MAKEWORD(2, 2);
     WSADATA data;
     if(WSAStartup(ver, &data))_Log("创建失败！", level::Fatal);
     if(LOBYTE(data.wVersion)!=2||HIBYTE(data.wHighVersion)!=2){
         _Log("版本不符！", level::Fatal);
         this->Close();
         WSACleanup();
-        exit(0);
+        throw 0;
     }
+    #endif
     server_addr.sin_family=AF_INET;
     #ifdef __linux__
     inet_aton("127.0.0.1", &server_addr.sin_addr);
@@ -140,6 +142,10 @@ MySocket::MySocket(Logger* _L, MysqlPool* _db){
     server_addr.sin_port=htons(Port);//端口
 }
 
+MySocket::~MySocket(){
+    Close();
+}
+
 void MySocket::Init(){
     std::ifstream file;
     string line;
@@ -147,7 +153,7 @@ void MySocket::Init(){
     if(file.fail()){
         _Log("读取配置文件失败！", level::Fatal);
         this->Close();
-        exit(0);
+        throw 0;
     }
     #ifdef __linux__
     ScfgStr[scfg::Cert]=ScfgStr[scfg::Key]="^[a-zA-Z0-9_\\-\\.]+\\.[a-zA-Z0-9]+$";
@@ -164,7 +170,7 @@ void MySocket::Init(){
         if(!IsLegal(value, SmapStr.find(key)->second)){
             _Log("请检查 "+key+" 项是否填写正确！", level::Fatal);
             this->Close();
-            exit(0);
+            throw 0;
         }
         if(key=="cert"){
             if(value.empty())value="cacert.pem";
@@ -183,7 +189,7 @@ void MySocket::Init(){
         if(i.second==false){
             _Log("请检查 "+SGetStr.find(i.first)->second+" 项是否填写正确！", level::Fatal);
             this->Close();
-            exit(0);
+            throw 0;
         }
 }
 
@@ -194,10 +200,8 @@ void MySocket::_Log(string msg, level Level, string UserName){
 
 void MySocket::Close(){
     _Log("正在关闭服务。", level::Info);
-    ssl->ShutDown();
+    ssl->Close();
     _Log("套接字已关闭。", level::Info);
-    db->ShutDown();
-    mLog->Close();
     delete ssl;
 }
 

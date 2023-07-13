@@ -12,7 +12,7 @@ string GetErrBuf();
 class MySSL{
     public:
         MySSL()=default;
-        void ShutDown();
+        void Close();
         SSL_CTX* GetCTX();
         unsigned int GetError();
         bool init(string cert, string key);
