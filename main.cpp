@@ -2,7 +2,9 @@
 #include "util.h"
 
 int main() {
+#ifdef _WIN32
     system("chcp 65001");
+#endif
     Service *Ser = nullptr;
     try {
         Ser = new Service();
