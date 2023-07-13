@@ -40,7 +40,7 @@ Service::Service() {
             throw GetErrBuf();
         if (EVP_PKEY_keygen_init(ctx) == 0)
             throw GetErrBuf();
-        if (EVP_PKEY_CTX_set_rsa_keygen_bits(ctx, 3072) <= 0)
+        if (EVP_PKEY_CTX_set_rsa_keygen_bits(ctx, 1024) <= 0)
             throw GetErrBuf();
         if (EVP_PKEY_keygen(ctx, &pkey) <= 0)
             throw GetErrBuf();
@@ -83,11 +83,8 @@ Service::Service() {
     FILE *PrivateKey;
     testcert.open(cert);
     testkey.open(_key);
-    if (testcert.is_open() && testkey.is_open()) {
-        testcert.close();
-        testkey.close();
+    if (testcert.is_open() && testkey.is_open())
         goto nxt;
-    }
     PublicKey = fopen(cert.c_str(), "w");
     PrivateKey = fopen(_key.c_str(), "w");
     if (!PEM_write_PUBKEY(PublicKey, pkey)) {
@@ -103,7 +100,6 @@ Service::Service() {
     }
     fclose(PublicKey);
     fclose(PrivateKey);
-    EVP_PKEY_free(pkey);
 nxt:
     EVP_cleanup();
     db = MysqlPool(&nLog);
