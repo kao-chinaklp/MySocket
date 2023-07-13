@@ -1,4 +1,5 @@
 #include "service.h"
+#include "util.h"
 
 #include <fstream>
 #include <openssl/pem.h>
@@ -29,27 +30,6 @@ Service::Service() {
     }
     ifile.close();
     ofile.close();
-    // init key&crt
-    OpenSSL_add_all_algorithms();
-    ERR_load_crypto_strings();
-    EVP_PKEY_CTX *ctx = EVP_PKEY_CTX_new_id(EVP_PKEY_RSA, NULL);
-    const EVP_CIPHER *cipher = EVP_aes_256_cfb128();
-    EVP_PKEY *pkey = nullptr;
-    try {
-        if (!ctx)
-            throw GetErrBuf();
-        if (EVP_PKEY_keygen_init(ctx) == 0)
-            throw GetErrBuf();
-        if (EVP_PKEY_CTX_set_rsa_keygen_bits(ctx, 3072) <= 0)
-            throw GetErrBuf();
-        if (EVP_PKEY_keygen(ctx, &pkey) <= 0)
-            throw GetErrBuf();
-        EVP_PKEY_CTX_free(ctx);
-    } catch (string buf) {
-        nLog.Output(buf, level::Error);
-        EVP_PKEY_CTX_free(ctx);
-        exit(0);
-    }
     string cert, _key;
     ifstream file;
     string line;
@@ -77,35 +57,60 @@ Service::Service() {
         cert = "cacert.pem";
         _key = "privkey.pem";
     }
-    ifstream testcert;
-    ifstream testkey;
-    FILE *PublicKey;
-    FILE *PrivateKey;
-    testcert.open(cert);
-    testkey.open(_key);
-    if (testcert.is_open() && testkey.is_open()) {
-        testcert.close();
-        testkey.close();
-        goto nxt;
+    // init key&crt
+    OpenSSL_add_all_algorithms();
+    ERR_load_crypto_strings();
+    EVP_PKEY_CTX *ctx = nullptr;
+    EVP_PKEY *pkey = nullptr;
+    BLOCK(keygen) {
+        FILE *PublicKey = nullptr;
+        FILE *PrivateKey = nullptr;
+        PublicKey = fopen(cert.c_str(), "r");
+        PrivateKey = fopen(_key.c_str(), "r");
+        if (PublicKey && PrivateKey) {
+            fclose(PublicKey);
+            fclose(PrivateKey);
+            break;
+        }
+        if (PublicKey || PrivateKey) {
+            fclose(PublicKey ? PublicKey : PrivateKey);
+            nLog.Output("密钥文件不完整，正在重新生成...", level::Warn);
+        }
+        ctx = EVP_PKEY_CTX_new_id(EVP_PKEY_RSA, nullptr);
+        const EVP_CIPHER *cipher = EVP_aes_256_cfb128();
+        try {
+            if (!ctx)
+                throw GetErrBuf();
+            if (EVP_PKEY_keygen_init(ctx) == 0)
+                throw GetErrBuf();
+            if (EVP_PKEY_CTX_set_rsa_keygen_bits(ctx, 3072) <= 0)
+                throw GetErrBuf();
+            if (EVP_PKEY_keygen(ctx, &pkey) <= 0)
+                throw GetErrBuf();
+        } catch (string buf) {
+            nLog.Output(buf, level::Error);
+            exit(0);
+        }
+        PublicKey = fopen(cert.c_str(), "w");
+        PrivateKey = fopen(_key.c_str(), "w");
+        if (!PEM_write_PUBKEY(PublicKey, pkey)) {
+            nLog.Output(GetErrBuf(), level::Error);
+            nLog.Close();
+            exit(0);
+        }
+        if (!PEM_write_PrivateKey(PrivateKey, pkey, cipher, nullptr, 0, nullptr,
+                                  nullptr)) {
+            nLog.Output(GetErrBuf(), level::Error);
+            nLog.Close();
+            exit(0);
+        }
+        fclose(PublicKey);
+        fclose(PrivateKey);
+        EVP_PKEY_free(pkey);
+        EVP_PKEY_CTX_free(ctx);
     }
-    PublicKey = fopen(cert.c_str(), "w");
-    PrivateKey = fopen(_key.c_str(), "w");
-    if (!PEM_write_PUBKEY(PublicKey, pkey)) {
-        nLog.Output(GetErrBuf(), level::Error);
-        nLog.Close();
-        exit(0);
-    }
-    if (!PEM_write_PrivateKey(PrivateKey, pkey, cipher, nullptr, 0, nullptr,
-                              nullptr)) {
-        nLog.Output(GetErrBuf(), level::Error);
-        nLog.Close();
-        exit(0);
-    }
-    fclose(PublicKey);
-    fclose(PrivateKey);
-    EVP_PKEY_free(pkey);
-nxt:
-    EVP_cleanup();
+    ENDBLOCK(keygen);
+    // Key generation code block end
     db = MysqlPool(&nLog);
     sock = MySocket(&nLog, &db);
 }
