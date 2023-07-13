@@ -8,6 +8,7 @@
 class Service {
   public:
     Service();
+    void Init();
     int Run(int type);
 
   private:

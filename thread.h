@@ -41,6 +41,7 @@ class CThreadPool {
 
   public:
     CThreadPool(int threadNum = 0);
+    ~CThreadPool();
     int AddTask(CTask *task);
     int StopAll();
     int GetTaskSize();

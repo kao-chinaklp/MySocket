@@ -1,4 +1,5 @@
 #include "mysocket.h"
+#include "util.h"
 
 using std::ios;
 using std::map;
@@ -118,7 +119,7 @@ MySocket::MySocket(Logger *_L, MysqlPool *_db) {
     if (!ssl->init(cert, _key)) {
         _Log(GetErrBuf(), level::Error);
         this->Close();
-        exit(0);
+        throw safe_exit{0};
     } else
         _Log("SSL载入成功！", level::Info);
     WSADATA data;
@@ -128,7 +129,7 @@ MySocket::MySocket(Logger *_L, MysqlPool *_db) {
         _Log("版本不符！", level::Fatal);
         this->Close();
         WSACleanup();
-        exit(0);
+        throw safe_exit{0};
     }
     server_addr.sin_family = AF_INET;
 #ifdef __linux__
@@ -146,7 +147,7 @@ void MySocket::Init() {
     if (file.fail()) {
         _Log("读取配置文件失败！", level::Fatal);
         this->Close();
-        exit(0);
+        throw safe_exit{0};
     }
 #ifdef __linux__
     ScfgStr[scfg::Cert] = ScfgStr[scfg::Key] =
@@ -166,7 +167,7 @@ void MySocket::Init() {
         if (!IsLegal(value, SmapStr.find(key)->second)) {
             _Log("请检查 " + key + " 项是否填写正确！", level::Fatal);
             this->Close();
-            exit(0);
+            throw safe_exit{0};
         }
         if (key == "cert") {
             if (value.empty())
@@ -190,9 +191,11 @@ void MySocket::Init() {
                      " 项是否填写正确！",
                  level::Fatal);
             this->Close();
-            exit(0);
+            throw safe_exit{0};
         }
 }
+
+MySocket::~MySocket() { WSACleanup(); }
 
 void MySocket::_Log(string msg, level Level, string UserName) {
     if (UserName.empty())
@@ -206,7 +209,6 @@ void MySocket::Close() {
     ssl->ShutDown();
     _Log("套接字已关闭。", level::Info);
     db->ShutDown();
-    mLog->Close();
     delete ssl;
 }
 

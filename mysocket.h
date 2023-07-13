@@ -62,6 +62,7 @@ class MySocket {
   public:
     MySocket() = default;
     MySocket(Logger *_L, MysqlPool *_db);
+    ~MySocket();
     void Init();
     void Close();
     MySSL *GetSSL();

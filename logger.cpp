@@ -104,6 +104,8 @@ Logger::Logger(int queue_size) {
         StartTime.push_back(str[i]);
 }
 
+Logger::~Logger() { Close(); }
+
 void Logger::Output(string msg, level nLevel) {
     MyLog *ta = new MyLog(StartTime);
     ta->GetInfo(msg, nLevel);

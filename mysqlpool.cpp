@@ -1,4 +1,5 @@
 #include "mysqlpool.h"
+#include "util.h"
 
 #include <map>
 
@@ -65,8 +66,7 @@ MysqlPool::MysqlPool(Logger *_L) {
     file.open("config.ini", ios::in);
     if (file.fail()) {
         nLog->Output("读取配置文件失败！", level::Fatal);
-        nLog->Close();
-        exit(0);
+        throw safe_exit{0};
     }
     while (getline(file, line)) {
         int Idx = line.find('=');
@@ -79,8 +79,7 @@ MysqlPool::MysqlPool(Logger *_L) {
             continue;
         if (!IsLegal(value, MapStr.find(key)->second)) {
             nLog->Output("请检查 " + key + " 项是否填写正确！", level::Fatal);
-            nLog->Close();
-            exit(0);
+            throw safe_exit{0};
         }
         if (key == "ip")
             IP = value;
@@ -103,8 +102,7 @@ MysqlPool::MysqlPool(Logger *_L) {
             nLog->Output("请检查 " + GetStr.find(i.first)->second +
                              " 项是否填写正确！",
                          level::Fatal);
-            nLog->Close();
-            exit(0);
+            throw safe_exit{0};
         }
     db = new Connection;
     Pool = new CThreadPool;
@@ -113,8 +111,7 @@ MysqlPool::MysqlPool(Logger *_L) {
     else {
         nLog->Output("数据库连接失败！错误码：" + to_string(db->GetError()),
                      level::Fatal);
-        nLog->Close();
-        exit(0);
+        throw safe_exit{0};
     }
 }
 

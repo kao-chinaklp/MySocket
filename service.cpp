@@ -10,9 +10,9 @@ using std::ios;
 using std::map;
 using std::ofstream;
 
-Service::Service() {
-    nLog = Logger(5);
-    nLog.Output("日志系统启动成功！", level::Info);
+Service::Service() : nLog(5) { nLog.Output("日志系统启动成功！", level::Info); }
+
+void Service::Init() {
     // init config
     DefaultConfig =
         "# "
@@ -37,7 +37,7 @@ Service::Service() {
     if (file.fail()) {
         nLog.Output("读取配置文件失败！", level::Fatal);
         nLog.Close();
-        exit(0);
+        throw safe_exit{0};
     }
     while (getline(file, line)) {
         int Idx = line.find('=');
@@ -89,20 +89,20 @@ Service::Service() {
                 throw GetErrBuf();
         } catch (string buf) {
             nLog.Output(buf, level::Error);
-            exit(0);
+            throw safe_exit{0};
         }
         PublicKey = fopen(cert.c_str(), "w");
         PrivateKey = fopen(_key.c_str(), "w");
         if (!PEM_write_PUBKEY(PublicKey, pkey)) {
             nLog.Output(GetErrBuf(), level::Error);
             nLog.Close();
-            exit(0);
+            throw safe_exit{0};
         }
         if (!PEM_write_PrivateKey(PrivateKey, pkey, cipher, nullptr, 0, nullptr,
                                   nullptr)) {
             nLog.Output(GetErrBuf(), level::Error);
             nLog.Close();
-            exit(0);
+            throw safe_exit{0};
         }
         fclose(PublicKey);
         fclose(PrivateKey);

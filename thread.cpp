@@ -16,6 +16,12 @@ CThreadPool::CThreadPool(int threadNum) {
     Create();
 }
 
+CThreadPool::~CThreadPool() {
+    StopAll();
+    pthread_mutex_destroy(&pthreadMutex);
+    pthread_cond_destroy(&pthreadCond);
+}
+
 void *ThreadFunc(void *threadData) {
     CThreadPool *Data = (CThreadPool *)threadData;
     pthread_t tid = pthread_self();
@@ -24,7 +30,7 @@ void *ThreadFunc(void *threadData) {
         // 没有任务，等待执行
         while (Data->queTaskList.empty() && !Data->shutdown)
             pthread_cond_wait(&Data->pthreadCond, &Data->pthreadMutex);
-        if (Data->shutdown) {
+        if (Data->queTaskList.empty() && Data->shutdown) {
             pthread_mutex_unlock(&Data->pthreadMutex);
             pthread_exit(NULL);
         }
@@ -65,8 +71,6 @@ int CThreadPool::StopAll() {
         pthread_join(pthread_id[i], NULL);
     free(pthread_id);
     pthread_id = NULL;
-    pthread_mutex_destroy(&pthreadMutex);
-    pthread_cond_destroy(&pthreadCond);
     return 0;
 }
 
