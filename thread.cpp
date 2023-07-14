@@ -95,7 +95,8 @@ void CThreadPool::Sleep(int ms){
 
 deque<pthread_t>::iterator CThreadPool::find(pthread_t tid){
     deque<pthread_t>::iterator p;
-    pthread_mutex_lock(&pthreadMutex);
+    while(pthread_mutex_trylock(&pthreadMutex)==EBUSY)
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
     for(p=BusyQue.begin();p!=BusyQue.end();p++)
         if(*p==tid)break;
     pthread_mutex_unlock(&pthreadMutex);
@@ -116,13 +117,15 @@ int CThreadPool::StopAll(){
         pthread_join(pthread_id[i], NULL);
     }
     while(!NoJoined.empty()){
-        auto e = NoJoined.end();
-        for(auto p=NoJoined.begin();p!=e;p++)
+        deque<pthread_t>::iterator p;
+        for(p=NoJoined.begin();p!=NoJoined.end();p++){
+            pthread_mutex_lock(&pthreadMutex);
             if(find(*p)==BusyQue.end()){
                 pthread_join(*p, NULL);
                 p=NoJoined.erase(p);
-                e=NoJoined.end();
             }
+            pthread_mutex_unlock(&pthreadMutex);
+        }
         this->Sleep(50);
     }
     free(pthread_id);

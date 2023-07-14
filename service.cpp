@@ -18,12 +18,9 @@ Service::Service(){
 }
 
 Service::~Service(){
-	if(sock!=nullptr)
-		delete sock;
-	if(db!=nullptr)
-		delete db;
-	if(nLog!=nullptr)
-		delete nLog;
+	if(sock!=nullptr)delete sock;
+	if(db!=nullptr)delete db;
+	if(nLog!=nullptr)delete nLog;
 }
 
 void Service::Init(){
