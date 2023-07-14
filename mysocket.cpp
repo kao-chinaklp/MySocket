@@ -129,7 +129,6 @@ MySocket::MySocket(Logger* _L, MysqlPool* _db){
     if(LOBYTE(data.wVersion)!=2||HIBYTE(data.wHighVersion)!=2){
         _Log("版本不符！", level::Fatal);
         this->Close();
-        WSACleanup();
         throw 0;
     }
     #endif
@@ -199,6 +198,9 @@ void MySocket::_Log(string msg, level Level, string UserName){
 }
 
 void MySocket::Close(){
+    #ifdef _win32
+    WSACleanup();
+    #endif
     _Log("正在关闭服务。", level::Info);
     ssl->Close();
     _Log("套接字已关闭。", level::Info);
@@ -264,7 +266,6 @@ int MySocket::Run(int type){
     close(server);
     #else
     closesocket(server);
-    WSACleanup();
     #endif
     Close();
     return 0;
