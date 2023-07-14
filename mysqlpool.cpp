@@ -98,7 +98,7 @@ MysqlPool::MysqlPool(Logger* _L){
             throw 0;
         }
     db=new Connection;
-    Pool=new CThreadPool;
+    Pool=new CThreadPool(QueueSize);
     if(db->Connect(IP, Port, UserName, PassWord, DBName))nLog->Output("数据库连接成功！", level::Info);
     else{
         nLog->Output("数据库连接失败！错误码："+to_string(db->GetError()), level::Fatal);

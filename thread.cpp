@@ -117,12 +117,14 @@ int CThreadPool::StopAll(){
         pthread_join(pthread_id[i], NULL);
     }
     while(!NoJoined.empty()){
-        deque<pthread_t>::iterator p;
+        deque<pthread_t>::iterator p, tmp;
         for(p=NoJoined.begin();p!=NoJoined.end();p++){
+            if(NoJoined.empty())break;
+            tmp=find(*p);
             pthread_mutex_lock(&pthreadMutex);
-            if(find(*p)==BusyQue.end()){
+            if(tmp==BusyQue.end()){
                 pthread_join(*p, NULL);
-                p=NoJoined.erase(p);
+                p=NoJoined.erase(p)-1;
             }
             pthread_mutex_unlock(&pthreadMutex);
         }
