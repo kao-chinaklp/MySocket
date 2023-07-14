@@ -4,6 +4,8 @@
 
 using std::string;
 
+string key_psw;
+
 string GetErrBuf(){
     char Buf[1024];
     memset(Buf, 0, 1024);
@@ -11,16 +13,25 @@ string GetErrBuf(){
     return string(Buf);
 }
 
+int PasswordCallback(char* buf, int size, int flag, void* userdata){
+	int len=key_psw.size();
+	if(len<size){
+		memcpy(buf, key_psw.c_str(), len);
+		return len;
+	}
+	return 0;
+}
+
 bool MySSL::init(string cert, string key){
     SSL_library_init();
     OpenSSL_add_all_algorithms();
     SSL_load_error_strings();
     ctx=SSL_CTX_new(TLS_server_method());
-    int len=SSL_CTX_use_certificate_file(ctx, cert.c_str(), SSL_FILETYPE_PEM);
-    if(ctx==nullptr||
-       SSL_CTX_use_certificate_file(ctx, cert.c_str(), SSL_FILETYPE_PEM)<=0||
-       SSL_CTX_use_PrivateKey_file(ctx, key.c_str(), SSL_FILETYPE_PEM)<=0||
-       !SSL_CTX_check_private_key(ctx))
+    SSL_CTX_use_certificate_file(ctx, cert.c_str(), SSL_FILETYPE_PEM);
+    SSL_CTX_set_default_passwd_cb(ctx, PasswordCallback);
+    SSL_CTX_set_default_passwd_cb_userdata(ctx, nullptr);
+    SSL_CTX_use_PrivateKey_file(ctx, key.c_str(), SSL_FILETYPE_PEM);
+    if(ctx==nullptr||!SSL_CTX_check_private_key(ctx))
         return false;
     return true;
 }

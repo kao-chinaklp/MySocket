@@ -118,7 +118,6 @@ MySocket::MySocket(Logger* _L, MysqlPool* _db){
     ssl=new MySSL;
     if(!ssl->init(cert, _key)){
         _Log(GetErrBuf(), level::Error);
-        this->Close();
         throw 0;
     }
     else _Log("SSL载入成功！", level::Info);
@@ -128,7 +127,6 @@ MySocket::MySocket(Logger* _L, MysqlPool* _db){
     if(WSAStartup(ver, &data))_Log("创建失败！", level::Fatal);
     if(LOBYTE(data.wVersion)!=2||HIBYTE(data.wHighVersion)!=2){
         _Log("版本不符！", level::Fatal);
-        this->Close();
         throw 0;
     }
     #endif
@@ -151,7 +149,6 @@ void MySocket::Init(){
     file.open("config.ini", ios::in);
     if(file.fail()){
         _Log("读取配置文件失败！", level::Fatal);
-        this->Close();
         throw 0;
     }
     #ifdef __linux__
@@ -168,7 +165,6 @@ void MySocket::Init(){
         if(SmapStr.find(key)==SmapStr.end())continue;
         if(!IsLegal(value, SmapStr.find(key)->second)){
             _Log("请检查 "+key+" 项是否填写正确！", level::Fatal);
-            this->Close();
             throw 0;
         }
         if(key=="cert"){
@@ -187,7 +183,6 @@ void MySocket::Init(){
     for(auto &i:Flag)
         if(i.second==false){
             _Log("请检查 "+SGetStr.find(i.first)->second+" 项是否填写正确！", level::Fatal);
-            this->Close();
             throw 0;
         }
 }
@@ -198,7 +193,7 @@ void MySocket::_Log(string msg, level Level, string UserName){
 }
 
 void MySocket::Close(){
-    #ifdef _win32
+    #ifdef _WIN32
     WSACleanup();
     #endif
     _Log("正在关闭服务。", level::Info);

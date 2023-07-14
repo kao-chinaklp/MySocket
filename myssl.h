@@ -7,11 +7,14 @@
 
 using std::string;
 
+extern string key_psw;;
+
 string GetErrBuf();
+int PasswordCallback(char* buf, int size, int flag, void* userdata);
 
 class MySSL{
     public:
-        MySSL()=default;
+        MySSL():ctx(nullptr){};
         void Close();
         SSL_CTX* GetCTX();
         unsigned int GetError();
