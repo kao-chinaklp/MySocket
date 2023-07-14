@@ -14,9 +14,9 @@ class Service{
 		
 	private:
 		string DefaultConfig;
-		Logger* nLog;
-		MysqlPool* db;
-		MySocket* sock;
+		Logger* nLog=nullptr;
+		MysqlPool* db=nullptr;
+		MySocket* sock=nullptr;
 };
 
 #endif

@@ -7,7 +7,7 @@
 
 using std::string;
 
-extern string key_psw;;
+extern string key_psw;
 
 string GetErrBuf();
 int PasswordCallback(char* buf, int size, int flag, void* userdata);

@@ -116,10 +116,12 @@ int CThreadPool::StopAll(){
         pthread_join(pthread_id[i], NULL);
     }
     while(!NoJoined.empty()){
-        for(deque<pthread_t>::iterator p=NoJoined.begin();p!=NoJoined.end();p++)
+        auto e = NoJoined.end();
+        for(auto p=NoJoined.begin();p!=e;p++)
             if(find(*p)==BusyQue.end()){
                 pthread_join(*p, NULL);
                 p=NoJoined.erase(p);
+                e=NoJoined.end();
             }
         this->Sleep(50);
     }
