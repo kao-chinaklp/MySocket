@@ -1,4 +1,5 @@
 #include "account.h"
+#include "context.h"
 
 Account::Account(string username, MysqlPool* _db){
 	char* err;
@@ -8,12 +9,12 @@ Account::Account(string username, MysqlPool* _db){
 	ctx=EVP_MD_CTX_new();
 	if(ctx==nullptr){
 		ERR_error_string(ERR_get_error(), err);
-		Err="未知错误！"+string(err);
+		Err=AccountErr+string(err);
 	}
 	sha256=EVP_MD_fetch(NULL, "SHA256", NULL);
 	if(ctx==nullptr){
 		ERR_error_string(ERR_get_error(), err);
-		Err="未知错误！"+string(err);
+		Err=AccountErr+string(err);
 	}
 }
 
@@ -36,18 +37,18 @@ bool Account::encrypt(const char* msg){
 	char* err;
 	if(!EVP_DigestUpdate(ctx, msg, sizeof(msg))){
 		ERR_error_string(ERR_get_error(), err);
-		Err="未知错误，请联系管理员！"+string(err);
+		Err=AccountErr+string(err);
 		return false;
 	}
 	buff=(unsigned char*)OPENSSL_malloc(EVP_MD_get_size(sha256));
 	if(buff==nullptr){
 		ERR_error_string(ERR_get_error(), err);
-		Err="未知错误，请联系管理员！"+string(err);
+		Err=AccountErr+string(err);
 		return false;
 	}
 	if(!EVP_DigestFinal_ex(ctx, buff, &len)){
 		ERR_error_string(ERR_get_error(), err);
-		Err="未知错误，请联系管理员！"+string(err);
+		Err=AccountErr+string(err);
 		return false;
 	}
 	return true;
@@ -64,7 +65,7 @@ bool Account::Login(string UserName, string PassWord){
 		return true;
 	}
 	else{
-		Err="账号或密码错误！";
+		Err=LoginErr;
 		return false;
 	}
 }
@@ -76,12 +77,12 @@ bool Account::Register(string UserName, string PassWord){
 	db->Operate("select * from userinfo;", op::Query, 
 			    UserName, (const char*)(char*)buff, &State, false);
 	if(!State){
-		Err="账号已经被注册！";
+		Err=RegisterErr;
 		return false;
 	}
 	db->Operate("insert into userinfo ", op::Insert, UserName, PassWord.c_str(), &State, true);
 	if(!State){
-		Err="未知错误，请联系管理员！";
+		Err=AccountErr;
 		return false;
 	}
 	else{

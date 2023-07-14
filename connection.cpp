@@ -16,28 +16,14 @@ bool Connection::Connect(string IP, unsigned short port,
 }
 
 bool Connection::Update(string sql){
-    if(mysql_query(Conn, sql.c_str())){
-        // LOG();
-        return false;
-    }
+    if(mysql_query(Conn, sql.c_str()))return false;
     return true;
 }
 
 MYSQL_RES* Connection::Query(string sql){
-    if(mysql_query(Conn, sql.c_str())){
-        // LOG();
-        return nullptr;
-    }
+    if(mysql_query(Conn, sql.c_str()))return nullptr;
     return mysql_use_result(Conn);
 }
-
-// void Connection::RefreshAliveTime(){
-//     AliveTime=clock();
-// }
-
-// clock_t Connection::GetTime(){
-//     return clock()-AliveTime;
-// }
 
 unsigned int Connection::GetError(){
     return mysql_errno(Conn);

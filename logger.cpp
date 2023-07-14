@@ -1,4 +1,5 @@
 #include "logger.h"
+#include "context.h"
 
 #include <map>
 #include <regex>
@@ -60,7 +61,7 @@ FileLogger::FileLogger(string _Time):Log(){
     regex_replace(_FileName.begin(), FileName.begin(), FileName.end(), express, "-");
     _File.open("./logs/"+_FileName, ios::app);
     if(!_File.is_open()){
-        printf("无法打开日志文件！");
+        printf(LogFatal);
         throw 0;
     }
 }
@@ -71,7 +72,7 @@ FileLogger::~FileLogger(){
 }
 
 void Logger::Close(){
-    Output("日志系统正在关闭。", level::Info);
+    Output(LogClose, level::Info);
     Pool->StopAll();
 }
 

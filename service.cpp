@@ -14,7 +14,7 @@ extern string key_psw;
 
 Service::Service(){
 	nLog=new Logger(5);
-	nLog->Output("日志系统启动成功！", level::Info);
+	nLog->Output(LoggerStart, level::Info);
 }
 
 Service::~Service(){
@@ -39,7 +39,7 @@ void Service::Init(){
     string line;
 	file.open("config.ini", ios::in);
     if(file.fail()){
-        nLog->Output("读取配置文件失败！", level::Fatal);
+        nLog->Output(ConfigReadingErr, level::Fatal);
         throw 0;
     }
     while(getline(file, line)){
@@ -75,7 +75,7 @@ void Service::Init(){
 		}
 		if(PublicKey||PrivateKey){
 			fclose(PublicKey?PublicKey:PrivateKey);
-			nLog->Output("密钥文件不完整，正在重新生成...", level::Warn);
+			nLog->Output(KeyfileIncomplete, level::Warn);
 		}
 		ctx=EVP_PKEY_CTX_new_id(EVP_PKEY_RSA, NULL);
 		const EVP_CIPHER* chiper=EVP_aes_256_cfb128();
@@ -105,7 +105,7 @@ void Service::Init(){
 		fclose(PrivateKey);
 		EVP_PKEY_free(pkey);
 		EVP_PKEY_CTX_free(ctx);
-		nLog->Output("证书成功生成！", level::Info);
+		nLog->Output(KeyfileWSuccess, level::Info);
 	}
 	db=new MysqlPool(nLog);
 	sock=new MySocket(nLog, db);

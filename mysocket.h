@@ -19,7 +19,7 @@
 
 using namespace logger;
 
-enum class scfg{Cert, Key, Port, QueSize};
+enum class scfg{Cert, Key, IP, Port, QueSize};
 class MySocket;
 
 class MyTask:public CTask{
@@ -51,6 +51,7 @@ class MySocket{
         SOCKADDR_IN accept_addr;
         CThreadPool* Pool;
         int Port;
+        string IP;
         string cert;
         string _key;
         int QueueSize;

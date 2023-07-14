@@ -1,4 +1,5 @@
 #include "mysocket.h"
+#include "context.h"
 
 using std::ios;
 using std::map;
@@ -6,12 +7,14 @@ using std::to_string;
 
 static map<scfg, const char*>ScfgStr{
     {scfg::Cert, ""},
-    {scfg::Key, ""}
+    {scfg::Key, ""},
+    {scfg::IP, "^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$"},
 };
 
 static const map<string, scfg>SmapStr{
     {"cert", scfg::Cert},
     {"key", scfg::Key},
+    {"server-ip", scfg::IP},
     {"sock-port", scfg::Port},
     {"sock-que-size", scfg::QueSize}
 };
@@ -19,6 +22,7 @@ static const map<string, scfg>SmapStr{
 static const map<scfg, string>SGetStr{
     {scfg::Cert, "cert"},
     {scfg::Key, "key"},
+    {scfg::IP, "server-ip"},
     {scfg::Port, "sock-port"},
     {scfg::QueSize, "sock-que-size"}
 };
@@ -39,7 +43,7 @@ int MyTask::Run(){
     SSL* ssl=SSL_new(sock->GetSSL()->GetCTX());
     SSL_set_fd(ssl, connfd);
     if(SSL_accept(ssl)<=0){
-        sock->_Log("连接失败！", level::Warn);
+        sock->_Log(ConnectFailed, level::Warn);
         SSL_shutdown(ssl);
         SSL_free(ssl);
         #ifdef __linux__
@@ -103,7 +107,7 @@ int MyTask::Run(){
 
 int MyTask::Receive(SSL* ssl, char* recv, string UserInfo){
     int len=SSL_read(ssl, recv, 1024);
-    if(len==0)sock->_Log("链接失效！", level::Info);
+    if(len==0)sock->_Log(ConnectionLost, level::Info);
     if(len<0)sock->_Log(GetErrBuf(), level::Error, UserInfo);
     return len;
 }
@@ -120,23 +124,23 @@ MySocket::MySocket(Logger* _L, MysqlPool* _db){
         _Log(GetErrBuf(), level::Error);
         throw 0;
     }
-    else _Log("SSL载入成功！", level::Info);
+    else _Log(SSLLoadSuccess, level::Info);
     #ifdef _WIN32
     WORD ver=MAKEWORD(2, 2);
     WSADATA data;
-    if(WSAStartup(ver, &data))_Log("创建失败！", level::Fatal);
+    if(WSAStartup(ver, &data))_Log(CreateFailed, level::Fatal);
     if(LOBYTE(data.wVersion)!=2||HIBYTE(data.wHighVersion)!=2){
-        _Log("版本不符！", level::Fatal);
+        _Log(VersionWrong, level::Fatal);
         throw 0;
     }
     #endif
     server_addr.sin_family=AF_INET;
     #ifdef __linux__
-    inet_aton("127.0.0.1", &server_addr.sin_addr);
+    inet_aton(IP.c_str(), &server_addr.sin_addr);
     #else
-    server_addr.sin_addr.S_un.S_addr=inet_addr("127.0.0.1");
+    server_addr.sin_addr.S_un.S_addr=inet_addr(IP.c_str());
     #endif
-    server_addr.sin_port=htons(Port);//端口
+    server_addr.sin_port=htons(Port);
 }
 
 MySocket::~MySocket(){
@@ -148,7 +152,7 @@ void MySocket::Init(){
     string line;
     file.open("config.ini", ios::in);
     if(file.fail()){
-        _Log("读取配置文件失败！", level::Fatal);
+        _Log(ConfigReadingErr, level::Fatal);
         throw 0;
     }
     #ifdef __linux__
@@ -164,7 +168,7 @@ void MySocket::Init(){
         string value=line.substr(Idx+1, EndIdx-Idx-1);
         if(SmapStr.find(key)==SmapStr.end())continue;
         if(!IsLegal(value, SmapStr.find(key)->second)){
-            _Log("请检查 "+key+" 项是否填写正确！", level::Fatal);
+            _Log(CheckCorrectnessF+key+CheckCorrectnessB, level::Fatal);
             throw 0;
         }
         if(key=="cert"){
@@ -175,6 +179,7 @@ void MySocket::Init(){
             if(value.empty())value="privkey.pem";
             _key=value;
         }
+        else if(key=="server-ip")IP=value;
         else if(key=="sock-port")Port=atoi(value.c_str());
         else if(key=="sock-que-size")QueueSize=atoi(value.c_str());
         else continue;
@@ -182,7 +187,7 @@ void MySocket::Init(){
     }
     for(auto &i:Flag)
         if(i.second==false){
-            _Log("请检查 "+SGetStr.find(i.first)->second+" 项是否填写正确！", level::Fatal);
+            _Log(CheckCorrectnessF+SGetStr.find(i.first)->second+CheckCorrectnessB, level::Fatal);
             throw 0;
         }
 }
@@ -196,9 +201,9 @@ void MySocket::Close(){
     #ifdef _WIN32
     WSACleanup();
     #endif
-    _Log("正在关闭服务。", level::Info);
+    _Log(ServiceClose, level::Info);
     ssl->Close();
-    _Log("套接字已关闭。", level::Info);
+    _Log(SocketClose, level::Info);
     delete ssl;
 }
 
@@ -222,32 +227,32 @@ int MySocket::Run(int type){
     if(type==1)server=socket(AF_INET, SOCK_STREAM, 0);
     else server=socket(AF_INET, SOCK_DGRAM, 0);
     if(bind(server, (SOCKADDR*)&server_addr, sizeof(SOCKADDR))==SOCKET_ERROR){
-        _Log("创建套接字失败！", level::Fatal);
+        _Log(BindFatal, level::Fatal);
         #ifndef __linux__
         WSACleanup();
         #endif
         Close();
         return -1;
     }
-    else _Log("启动成功！", level::Info);
+    else _Log(CreateSockFailed, level::Info);
     if(listen(server, QueueSize)<0){
-        _Log("监听失败！", level::Fatal);
+        _Log(ListenFatal, level::Fatal);
         #ifndef __linux__
         WSACleanup();
         #endif
         Close();
         return -1;
     }
-    else _Log("套接字启动成功！正在监听"+to_string(Port)+"端口", level::Info);
+    else _Log(SuccessStartF+IP+":"+to_string(Port)+SuccessStartB, level::Info);
     int len=sizeof(SOCKADDR);
     while(true){
         s_accept=accept(server, (SOCKADDR*)&accept_addr, &len);
         const string _IP(inet_ntoa(accept_addr.sin_addr));
         const string _Port=to_string(ntohs(accept_addr.sin_port));
         const string _Addr=_IP+":"+_Port;
-        _Log(_Addr+"尝试连接……", level::Info);
+        _Log(_Addr+TryConnect, level::Info);
         if(s_accept==SOCKET_ERROR){
-            _Log(_Addr+" 连接失败！", level::Info);
+            _Log(_Addr+ConnectFatal, level::Info);
             continue;
         }
         MyTask* ta=new MyTask;
