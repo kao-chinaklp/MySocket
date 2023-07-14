@@ -10,7 +10,7 @@ using std::ofstream;
 using std::ios;
 using std::map;
 
-string key_psw;
+extern string key_psw;
 
 Service::Service(){
 	nLog=new Logger(5);
@@ -18,18 +18,12 @@ Service::Service(){
 }
 
 Service::~Service(){
-	delete sock;
-	delete db;
-	delete nLog;
-}
-
-int PasswordCallback(char* buf, int size, int flag, void* userdata){
-	int len=key_psw.size();
-	if(len<size){
-		memcpy(buf, key_psw.c_str(), len);
-		return len;
-	}
-	return 0;
+	if(sock!=nullptr)
+		delete sock;
+	if(db!=nullptr)
+		delete db;
+	if(nLog!=nullptr)
+		delete nLog;
 }
 
 void Service::Init(){
