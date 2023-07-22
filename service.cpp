@@ -82,7 +82,7 @@ void Service::Init(){
 		try{
 			if(!ctx)throw GetErrBuf();
 			if(EVP_PKEY_keygen_init(ctx)==0)throw GetErrBuf();
-			if(EVP_PKEY_CTX_set_rsa_keygen_bits(ctx, 1024)<=0)throw GetErrBuf();
+			if(EVP_PKEY_CTX_set_rsa_keygen_bits(ctx, 2048)<=0)throw GetErrBuf();
 			if(EVP_PKEY_keygen(ctx, &pkey)<=0)throw GetErrBuf();
 		}
 		catch(string buf){

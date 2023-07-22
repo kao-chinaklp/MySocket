@@ -179,7 +179,10 @@ void MySocket::Init(){
             if(value.empty())value="privkey.pem";
             _key=value;
         }
-        else if(key=="server-ip")IP=value;
+        else if(key=="server-ip"){
+            if(value.empty())value="127.0.0.1";
+            IP=value;
+        }
         else if(key=="sock-port")Port=atoi(value.c_str());
         else if(key=="sock-que-size")QueueSize=atoi(value.c_str());
         else continue;
@@ -208,7 +211,7 @@ void MySocket::Close(){
 }
 
 bool MySocket::IsLegal(string str, scfg type){
-    if(type==scfg::Cert&&str.empty()||type==scfg::Key&&str.empty())return true;
+    if(str.empty()&&(type==scfg::Cert||type==scfg::Key||type==scfg::IP))return true;
     if(type==scfg::QueSize){
         if(atoi(str.c_str())<=0)return false;
         return true;
