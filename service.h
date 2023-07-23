@@ -11,6 +11,8 @@ class Service{
 		~Service();
 		void Init();
 		int Run(int type);
+		bool CheckReadme();
+		void GenerateCertificate(string cert, string _key);
 		
 	private:
 		string DefaultConfig;

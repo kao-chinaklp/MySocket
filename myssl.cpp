@@ -27,7 +27,7 @@ bool MySSL::init(string cert, string key){
     OpenSSL_add_all_algorithms();
     SSL_load_error_strings();
     ctx=SSL_CTX_new(TLS_server_method());
-    SSL_CTX_use_certificate_file(ctx, cert.c_str(), SSL_FILETYPE_PEM);
+    SSL_CTX_use_certificate_chain_file(ctx, cert.c_str());
     SSL_CTX_set_default_passwd_cb(ctx, PasswordCallback);
     SSL_CTX_set_default_passwd_cb_userdata(ctx, nullptr);
     SSL_CTX_use_PrivateKey_file(ctx, key.c_str(), SSL_FILETYPE_PEM);

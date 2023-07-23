@@ -128,7 +128,10 @@ MySocket::MySocket(Logger* _L, MysqlPool* _db){
     #ifdef _WIN32
     WORD ver=MAKEWORD(2, 2);
     WSADATA data;
-    if(WSAStartup(ver, &data))_Log(CreateFailed, level::Fatal);
+    if(WSAStartup(ver, &data)){
+        _Log(CreateFailed, level::Fatal);
+        throw 0;
+    }
     if(LOBYTE(data.wVersion)!=2||HIBYTE(data.wHighVersion)!=2){
         _Log(VersionWrong, level::Fatal);
         throw 0;
@@ -231,20 +234,12 @@ int MySocket::Run(int type){
     else server=socket(AF_INET, SOCK_DGRAM, 0);
     if(bind(server, (SOCKADDR*)&server_addr, sizeof(SOCKADDR))==SOCKET_ERROR){
         _Log(BindFatal, level::Fatal);
-        #ifndef __linux__
-        WSACleanup();
-        #endif
-        Close();
-        return -1;
+        throw 0;
     }
-    else _Log(CreateSockFailed, level::Info);
+    else _Log(BindSuccess, level::Info);
     if(listen(server, QueueSize)<0){
         _Log(ListenFatal, level::Fatal);
-        #ifndef __linux__
-        WSACleanup();
-        #endif
-        Close();
-        return -1;
+        throw 0;
     }
     else _Log(SuccessStartF+IP+":"+to_string(Port)+SuccessStartB, level::Info);
     int len=sizeof(SOCKADDR);
@@ -270,8 +265,7 @@ int MySocket::Run(int type){
     #else
     closesocket(server);
     #endif
-    Close();
-    return 0;
+    throw 0;
 }
 
 void MySocket::SendAll(char* msg){

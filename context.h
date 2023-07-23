@@ -1,11 +1,24 @@
 //Global
 
+#define ReadmeReadingErr "读取readme文件失败！"
 #define ConfigReadingErr "读取配置文件失败！"
 #define CheckCorrectnessF "请检查 "
 #define CheckCorrectnessB " 项是否填写正确！"
 
 // Service
 
+#define Readme "关于本项目\n\
+本项目只是练手用的项目，仅供参考，不要投入生产环境中！\n\n\
+关于证书生成\n\
+生成的证书具有一年的有效期\n\
+本项目生成的证书不具备权威性，若有需要可自行向有关机构申请\n\n\
+关于配置文件\n\
+密钥文件留空表示自动生成；\n\
+key-psw项留空表示使用默认密码123456；\n\
+server-ip留空表示使用127.0.0.1；\n\
+不要更改版本号！\n\
+我已仔细阅读=false"
+#define ReadmeConfirm "请在仔细阅读同目录下readme.txt文件后将文件中“我已仔细阅读”的值设置为true再继续运行该程序。"
 #define LoggerStart "日志系统启动成功！"
 #define DefaultCfg "# socket（密钥文件留空表示自动生成，key-psw项留空表示使用默认密码123456，server-ip留空表示使用127.0.0.1）\n\
 cert=\nkey=\nkey-psw=\nserver-ip=\nsock-port=2333\nsock-que-size=10\n\n\
@@ -14,6 +27,10 @@ dbname=userinfo\ndb-port=3306\ndb-que-size=5\n\n\
 # 版本号（请不要更改此项）\nversion=v0.0.1-pre\n"
 #define KeyfileIncomplete "密钥文件不完整，正在重新生成..."
 #define KeyfileWSuccess "证书成功生成！"
+#define InputArea "请输入所在国家或地区：（如CN/US）"
+#define InputOwner "请输入证书持有者："
+#define IllegalInput "无效输入！\n"
+#define SignedFail "证书签名失败！："
 
 // Account
 
@@ -35,7 +52,7 @@ dbname=userinfo\ndb-port=3306\ndb-que-size=5\n\n\
 #define VersionWrong "版本不符！"
 #define ServiceClose "正在关闭服务..."
 #define SocketClose "套接字已关闭。"
-#define CreateSockFailed "创建套接字失败！"
+#define BindSuccess "套接字绑定成功！"
 #define SuccessStartF "套接字启动成功！正在监听"
 #define SuccessStartB "端口"
 #define TryConnect "尝试连接..."
