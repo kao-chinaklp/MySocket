@@ -1,3 +1,5 @@
 build/
 openssl/
 .vscode/
+require/
+MySocket-Updater/

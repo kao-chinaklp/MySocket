@@ -9,7 +9,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(EXPORT_COMPILE_COMMANDS ON)
 
 # add the executable
-add_executable(MySocket account.cpp mysocket.cpp connection.cpp mysqlpool.cpp myssl.cpp logger.cpp thread.cpp service.cpp main.cpp)
+add_executable(MySocket json.hpp account.cpp mysocket.cpp connection.cpp mysqlpool.cpp myssl.cpp logger.cpp thread.cpp service.cpp main.cpp)
 
 if(MINGW)
 	find_path(MYSQL_INCLUDE_DIR
@@ -60,16 +60,21 @@ find_package_handle_standard_args( MYSQL DEFAULT_MSG
 set(MYSQL_INCLUDE_DIRS ${MYSQL_INCLUDE_DIR})
 set(MYSQL_LIBRARIES ${MYSQL_LIBRARY})
 
-set(OPENSSL_ROOT_DIR "${CMAKE_SOURCE_DIR}/openssl")
+set(OPENSSL_ROOT_DIR "${CMAKE_SOURCE_DIR}/require")
 set(OPENSSL_USE_STATIC_LIBS TRUE)
 set(CMAKE_AR gcc-ar)
 find_package(OpenSSL REQUIRED)
-target_compile_options(MySocket PRIVATE -fdiagnostics-color=always -lcrypto -pedantic -lssl -ldl)
-# target_link_options(MySocket PRIVATE -flto -s)
+target_compile_options(MySocket PRIVATE -Wlto-type-mismatch -fdiagnostics-color=always -pedantic)
+target_link_options(MySocket PRIVATE -flto=auto -s)
 
-if(OpenSSL_FOUND)
-target_include_directories(MySocket PRIVATE ${OPENSSL_INCLUDE_DIR} ${MYSQL_INCLUDE_DIR})
-target_link_libraries(MySocket PRIVATE ${OPENSSL_LIBRARIES} ${MYSQL_LIBRARIES} winmm ws2_32 Crypt32 pthread)
-else(OpenSSL_FOUND)
-    message(FATAL_ERROR "OpenSSL not found")
-endif(OpenSSL_FOUND)
+# set curl path
+set(CURL_LIBRARY "${CMAKE_SOURCE_DIR}/require/lib")
+set(CURL_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/require/include")
+set(CURL_ROOT_DIR "${CMAKE_SOURCE_DIR}/require")
+set(CURL_USE_STATIC_LIBS TRUE)
+
+set(CMAKE_AR gcc-ar)
+set(CMAKE_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} -static-libstdc++)
+target_include_directories(MySocket PRIVATE ${CURL_INCLUDE_DIR} ${OPENSSL_INCLUDE_DIR} ${MYSQL_INCLUDE_DIR})
+target_link_directories(MySocket PRIVATE ${CURL_LIBRARY})
+target_link_libraries(MySocket PRIVATE curl ${OPENSSL_LIBRARIES} ${MYSQL_LIBRARIES} winmm ws2_32 Crypt32 pthread)

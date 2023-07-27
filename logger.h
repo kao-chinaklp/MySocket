@@ -13,7 +13,7 @@ using std::ofstream;
 using namespace std::chrono;
 
 namespace logger{
-    enum class level{Debug, Info, Warn, Error, Fatal};
+    enum class level{Debug, Info, Warn, Error, Fatal, Input};
     class Log{
         // 文本缓冲区的类
         class LogStream:public std::ostringstream{
@@ -45,6 +45,9 @@ namespace logger{
 
     // 控制台
     class ConsoleLogger:public Log{
+        const char Warn[5]="Warn";
+        const char Error[6]="Error";
+        const char Fatal[6]="Fatal";
         using Log::Log;
         virtual void Output(const char* tm, const char* nLevel, const char* msg);
     };

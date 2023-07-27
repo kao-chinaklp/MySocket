@@ -1,5 +1,6 @@
 //Global
 
+#define _Version "v0.0.1"
 #define ReadmeReadingErr "读取readme文件失败！"
 #define ConfigReadingErr "读取配置文件失败！"
 #define CheckCorrectnessF "请检查 "
@@ -24,7 +25,7 @@ server-ip留空表示使用127.0.0.1；\n\
 cert=\nkey=\nkey-psw=\nserver-ip=\nsock-port=2333\nsock-que-size=10\n\n\
 # mysql\nip=47.240.92.80\nusername=userinfo\npassword=mima123.\n\
 dbname=userinfo\ndb-port=3306\ndb-que-size=5\n\n\
-# 版本号（请不要更改此项）\nversion=v0.0.1-pre\n"
+# 版本号（请不要更改此项）\nversion="
 #define KeyfileIncomplete "密钥文件不完整，正在重新生成..."
 #define KeyfileWSuccess "证书成功生成！"
 #define InputArea "请输入所在国家或地区：（如CN/US）"

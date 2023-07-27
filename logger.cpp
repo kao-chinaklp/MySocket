@@ -3,8 +3,13 @@
 
 #include <map>
 #include <regex>
+#include <cstring>
 #include <cstdlib>
 #include <filesystem>
+
+#define RESET "\033[0m"
+#define RED "\033[31m"
+#define YELLOW "\033[33m"
 
 using std::map;
 using std::ios;
@@ -18,10 +23,11 @@ using namespace std::filesystem;
 
 static const map<level, const char*>LevelStr{
     {level::Debug, "Debug"},
-    {level::Info, "info"},
+    {level::Info, "Info"},
     {level::Warn, "Warn"},
     {level::Error, "Error"},
     {level::Fatal, "Fatal"},
+    {level::Input, "Input"}
 };
 
 ostream& operator<<(ostream& stream, const string msg){
@@ -51,7 +57,11 @@ void Log::EndLine(level nLevel, const char* msg){
 }
 
 void ConsoleLogger::Output(const char* tm, const char* nLevel, const char* msg){
+    if(std::strcmp(nLevel, Warn)==0)printf(YELLOW);
+    if(std::strcmp(nLevel, Error)==0)printf(RED);
+    if(std::strcmp(nLevel, Fatal)==0)printf(RED);
     printf("[%s][%s]%s\n", tm, nLevel, msg);
+    printf(RESET);
 }
 
 FileLogger::FileLogger(string _Time):Log(){
@@ -82,7 +92,7 @@ void FileLogger::Output(const char* tm, const char* nLevel, const char* msg){
 }
 
 int MyLog::Run(){
-	ocl(nLevel)<<msg;
+    if(nLevel!=level::Input)ocl(nLevel)<<msg;
 	ofl(nLevel)<<msg;
 	return 0;
 }
