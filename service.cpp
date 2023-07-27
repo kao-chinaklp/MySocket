@@ -183,7 +183,7 @@ bool Service::CheckUpdate(){
     }
     json data=json::parse(response);
 	LatestVersion=data["tag_name"];
-	if(LatestVersion>Version)return true;
+	if(LatestVersion>_Version)return true;
 	return false;
 }
 
@@ -215,7 +215,6 @@ void Service::GenerateCertificate(string cert, string _key){
 	FILE* PrivateKey=nullptr;
 	char* Area=new char[16];
 	char* Owner=new char[64];
-	OpenSSL_add_all_algorithms();
 	ERR_load_crypto_strings();
 	EVP_PKEY_CTX* ctx=nullptr;
 	EVP_PKEY* pkey=nullptr;
