@@ -20,7 +20,11 @@ server-ip留空表示使用127.0.0.1；\n\
 不要更改版本号！\n\
 我已仔细阅读=false"
 #define ReadmeConfirm "请在仔细阅读同目录下readme.txt文件后将文件中“我已仔细阅读”的值设置为true再继续运行该程序。"
+#define NewVersion "存在更新版本，是否现在更新？(Y/N)"
+#define StartUpdaterFail "无法启动更新程序！"
+#define InitCurlFail "初始化curl失败"
 #define LoggerStart "日志系统启动成功！"
+#define GetUpdateFail "无法获取更新！"
 #define DefaultCfg "# socket（密钥文件留空表示自动生成，key-psw项留空表示使用默认密码123456，server-ip留空表示使用127.0.0.1）\n\
 cert=\nkey=\nkey-psw=\nserver-ip=\nsock-port=2333\nsock-que-size=10\n\n\
 # mysql\nip=47.240.92.80\nusername=userinfo\npassword=mima123.\n\

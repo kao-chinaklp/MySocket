@@ -2,6 +2,8 @@
 #include "service.h"
 #include "context.h"
 
+#define CURL_STATICLIB
+
 #include <fstream>
 #include <iostream>
 #include <curl/curl.h>
@@ -64,7 +66,8 @@ void Service::Init(){
 	ofile.close();
 	string cert, _key;
 	ifstream file;
-    string line;
+    string line, key, value;
+	string origin;
 	file.open("config.ini", ios::in);
     if(file.fail()){
         nLog->Output(ConfigReadingErr, level::Fatal);
@@ -72,17 +75,27 @@ void Service::Init(){
     }
     while(getline(file, line)){
         int Idx=line.find('=');
-        if(Idx==-1)continue;
-        int EndIdx=line.find('\n', Idx);
-        string key=line.substr(0, Idx);
-        string value=line.substr(Idx+1, EndIdx-Idx-1);
+		int EndIdx;
+        if(Idx==-1)goto _end;
+        EndIdx=line.find('\n', Idx);
+        key=line.substr(0, Idx);
+        value=line.substr(Idx+1, EndIdx-Idx-1);
         if(key=="cert")cert=value;
         else if(key=="key")_key=value;
 		else if(key=="key-psw")key_psw=value;
-		else if(key=="version")Version=value;
+		else if(key=="version"){
+			Version=value;
+			origin.append("version=");
+			origin.append(_Version);
+			continue;
+		}
+		_end:
+		if(line.empty())origin.append("\n");
+		else origin.append(line+"\n");
     }
+	file.close();
 	if(CheckUpdate()){
-		nLog->Output("存在更新版本，是否现在更新？(Y/N)", level::Info);
+		nLog->Output(NewVersion, level::Info);
 		string state;
 		while(true){
 			std::getline(std::cin, state);
@@ -95,13 +108,20 @@ void Service::Init(){
 				if(system("start MySocket-Updater.exe")<0)IsError=true;
 				else throw 0;
 				#endif
-				if(IsError)nLog->Output("无法启动更新程序！"+string(strerror(errno)), level::Fatal);
+				if(IsError)nLog->Output(StartUpdaterFail+string(strerror(errno)), level::Fatal);
 				break;
 			}
 			if(state[0]=='N'||state[0]=='n')break;
 		}
 	}
-	file.close();
+	if(Version<_Version){
+		// 更新配置文件的版本号
+		ofstream output;
+		output.clear();
+		output.open("config.ini");
+		output<<origin;
+		output.close();
+	}
 	//检测证书文件
 	if(cert.empty()||_key.empty()){
 		cert="cacert.pem";
@@ -136,16 +156,16 @@ bool Service::CheckUpdate(){
 	CURL* curl;
 	string UserAgent;
 	string url="https://api.github.com/repos/kao-chinaklp/MySocket/releases/latest";
-    string AccessToken="Authorization: token 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";
+    string AccessToken="Authorization: token <your token>";
     string response;
 	string LatestVersion;
 	curl=curl_easy_init();
-    // UserAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36 Edg/115.0.1901.183";
-    // curl_easy_setopt(curl, CURLOPT_USERAGENT, UserAgent.c_str());
+    UserAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36 Edg/115.0.1901.183";
+    curl_easy_setopt(curl, CURLOPT_USERAGENT, UserAgent.c_str());
     curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, false);
     if(!curl){
-        nLog->Output("初始化curl失败", level::Warn);
+        nLog->Output(InitCurlFail, level::Warn);
         return false;
     }
     struct curl_slist* header=nullptr;
@@ -158,7 +178,7 @@ bool Service::CheckUpdate(){
     curl_easy_cleanup(curl);
     if(res!=CURLE_OK){
 		string ErrBuf(curl_easy_strerror(res));
-		nLog->Output("无法获取更新！"+ErrBuf, level::Warn);
+		nLog->Output(GetUpdateFail+ErrBuf, level::Warn);
         return false;
     }
     json data=json::parse(response);
