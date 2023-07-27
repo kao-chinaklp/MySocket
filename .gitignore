@@ -3,3 +3,4 @@ openssl/
 .vscode/
 require/
 MySocket-Updater/
+json.hpp
