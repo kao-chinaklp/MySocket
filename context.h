@@ -1,6 +1,6 @@
 //Global
 
-#define _Version "v0.0.2"
+#define _Version "v0.0.3"
 #define ReadmeReadingErr "读取readme文件失败！"
 #define ConfigReadingErr "读取配置文件失败！"
 #define CheckCorrectnessF "请检查 "
