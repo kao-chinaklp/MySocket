@@ -90,6 +90,7 @@ MysqlPool::MysqlPool(Logger* _L){
         else continue;
         Flag[MapStr.find(key)->second]=true;
     }
+    if(TableName.empty())TableName="userinfo";
     for(auto &i:Flag)
         if(i.second==false){
             nLog->Output(CheckCorrectnessF+GetStr.find(i.first)->second+CheckCorrectnessB, level::Fatal);
@@ -97,12 +98,12 @@ MysqlPool::MysqlPool(Logger* _L){
         }
     db=new Connection;
     Pool=new CThreadPool(QueueSize);
-    if(db->Connect(IP, Port, UserName, PassWord))nLog->Output(DBConnectSuccess, level::Info);
+    if(db->Connect(IP, Port, UserName, PassWord, DBName))nLog->Output(DBConnectSuccess, level::Info);
     else{
         nLog->Output(DBConnectFatal+to_string(db->GetError()), level::Fatal);
         throw 0;
     }
-    if(!db->CreateDB(DBName)||!db->Init(TableName)){
+    if(!db->Init(DBName, TableName)){
         nLog->Output(OperateErr+to_string(db->GetError()), level::Error);
         throw 0;
     }
