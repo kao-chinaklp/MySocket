@@ -16,8 +16,7 @@ using namespace std::chrono;
 static const map<const char*, const char*>Require{
     {"id", "INT"},
     {"username", "VARCHAR(50)"},
-    {"password", "VARCHAR(255)"},
-    {"create_at", "TIMESTAMP"}
+    {"password", "VARCHAR(255)"}
 };
 
 class Connection{

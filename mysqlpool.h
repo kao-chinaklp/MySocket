@@ -1,7 +1,6 @@
 #ifndef MYSQLPOOL_H_
 #define MYSQLPOOL_H_
 
-#include "thread.h"
 #include "logger.h"
 #include "connection.h"
 

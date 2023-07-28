@@ -12,10 +12,7 @@
 #endif
 
 #include "myssl.h"
-#include "logger.h"
-#include "thread.h"
 #include "account.h"
-#include "mysqlpool.h"
 
 using namespace logger;
 

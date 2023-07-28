@@ -5,8 +5,8 @@
 #include <string>
 #include <pthread.h>
 
-using std::string;
 using std::deque;
+using std::string;
 
 class CTask{
     protected:
