@@ -2,5 +2,7 @@ build/
 openssl/
 .vscode/
 require/
+connection/
 MySocket-Updater/
+token.h
 json.hpp

@@ -236,7 +236,6 @@ int MySocket::Run(int type){
         _Log(BindFatal, level::Fatal);
         throw 0;
     }
-    else _Log(BindSuccess, level::Info);
     if(listen(server, QueueSize)<0){
         _Log(ListenFatal, level::Fatal);
         throw 0;

@@ -3,9 +3,9 @@
 
 #include <map>
 
-using std::to_string;
 using std::ios;
 using std::map;
+using std::to_string;
 
 static const map<cfg, const char*>CfgStr{
     {cfg::IP, "^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$"},
@@ -37,19 +37,15 @@ void DBOperator::GetInfo(Info _info){
 }
 
 int DBOperator::Run(){
+    *(info.Flag)=true;
     if(info.type==op::Query){
         MYSQL_RES* res=info.db->Query(info.cmd);
         MYSQL_ROW row;
         int num=mysql_num_fields(res);
         *(info.State)=true;
-        while((row=mysql_fetch_row(res))!=nullptr)
-            if(strcmp(row[0], info.UserName))
-                if(info.mode==0&&strcmp(info.PassWord, row[1])||info.mode==1){
-                    *(info.State)=false;
-                    break;
-                }
+        if(num>0)*(info.State)=false;// 存在
     }
-    if(info.type==op::Update||info.type==op::Insert){
+    if(info.type==op::Alter||info.type==op::Insert){
         if(!info.db->Update(info.cmd)){
             string _info(OperateErr+to_string(info.db->GetError()));
             info.nLog->Output(_info, level::Error);
@@ -88,6 +84,7 @@ MysqlPool::MysqlPool(Logger* _L){
         else if(key=="username")UserName=value;
         else if(key=="password")PassWord=value;
         else if(key=="dbname")DBName=value;
+        else if(key=="tablename")TableName=value;
         else if(key=="db-port")Port=atoi(value.c_str());
         else if(key=="db-que-size")QueueSize=atoi(value.c_str());
         else continue;
@@ -100,9 +97,13 @@ MysqlPool::MysqlPool(Logger* _L){
         }
     db=new Connection;
     Pool=new CThreadPool(QueueSize);
-    if(db->Connect(IP, Port, UserName, PassWord, DBName))nLog->Output(DBConnectSuccess, level::Info);
+    if(db->Connect(IP, Port, UserName, PassWord))nLog->Output(DBConnectSuccess, level::Info);
     else{
         nLog->Output(DBConnectFatal+to_string(db->GetError()), level::Fatal);
+        throw 0;
+    }
+    if(!db->CreateDB(DBName)||!db->Init(TableName)){
+        nLog->Output(OperateErr+to_string(db->GetError()), level::Error);
         throw 0;
     }
 }
@@ -130,12 +131,20 @@ void MysqlPool::Close(){
     nLog->Output(DBDisconnect, level::Info);
 }
 
-int MysqlPool::Operate(string sql, op _t, string _username, const char* _password, bool* _s, bool mode){
+int MysqlPool::Operate(op _t, string _username, const char* _password, 
+                       bool* _s, bool mode, bool* Flag){
+    string sql;
     DBOperator* ta=new DBOperator;
-    if(_t==op::Insert){
-        ta->GetInfo({sql, _t, nLog, db, _username.c_str(), _password, _s, mode});
-        ta->SetTaskName("mysql");
-        Pool->AddTask(ta);
-    }
+    if(_t==op::Insert)
+        sql="INSERT INTO "+TableName+" (username, password) VALUES ('"+_username+"', '"+_password+"')";
+    if(_t==op::Query&&mode==1)
+        sql="SELECT username FROM "+TableName+" WHERE username='"+_username+"'";
+    if(_t==op::Query&&mode==0)
+        sql="SELECT username FROM "+TableName+" WHERE username='"+_username+"' AND password='"+_password+"'";
+    if(_t==op::Alter)
+        sql="DELETE FROM "+TableName+" WHERE username='"+_username+"'";
+    ta->GetInfo({sql, _t, nLog, db, _username.c_str(), _password, _s, mode, Flag});
+    ta->SetTaskName("mysql");
+    Pool->AddTask(ta);
     return 0;
 }

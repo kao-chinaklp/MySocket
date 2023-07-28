@@ -22,8 +22,9 @@ class Account{
 		string GetErr();
 		string GetName();
 		bool encrypt(const char* msg);
-		bool Login(string username, string password);
-		bool Register(string username, string password);
+		bool Login(string UserName, string PassWord);
+		bool Register(string UserName, string PassWord);
+		bool Logoff(string UserName);
 };
 
 #endif

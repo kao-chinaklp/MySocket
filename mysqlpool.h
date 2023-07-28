@@ -12,7 +12,7 @@ using std::regex;
 
 using namespace logger;
 
-enum class op{Query, Insert, Update};
+enum class op{Query, Insert, Alter};
 enum class cfg{IP, UserName, PassWord, DBName, Port, QueSize};
 class DBOperator:public CTask{
     public:
@@ -20,9 +20,9 @@ class DBOperator:public CTask{
             public:
                 Info()=default;
                 Info(string _cmd, op _type, Logger* _Log, Connection* _db, 
-                     const char* _username, const char* _psw, bool* _s, bool _mode):
+                     const char* _username, const char* _psw, bool* _s, bool _mode, bool* _Flag):
                 cmd(_cmd), type(_type), nLog(_Log), db(_db),
-                UserName(_username), PassWord(_psw), State(_s), mode(_mode){}
+                UserName(_username), PassWord(_psw), State(_s), mode(_mode), Flag(_Flag){}
                 Logger* nLog;
                 Connection* db;
                 op type;
@@ -32,6 +32,7 @@ class DBOperator:public CTask{
                 const char* PassWord;
                 bool* State;
                 bool mode; // 0 == login 1 == register
+                bool* Flag;
         };
 
     public:
@@ -51,9 +52,10 @@ class MysqlPool{
         ~MysqlPool();
         void Close();
         bool IsLegal(string str, cfg type);
-        int Operate(string sql, op _t, string _username, const char* _password, bool* _s, bool mode);
+        int Operate(op _t, string _username, const char* _password, bool* _s, bool mode, bool* Flag);
 
     private:
+        string TableName;
         Logger* nLog;
         Connection* db;
         CThreadPool* Pool;

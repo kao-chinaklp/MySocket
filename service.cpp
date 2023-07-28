@@ -1,6 +1,12 @@
+#include "token.h"
 #include "json.hpp"
 #include "service.h"
 #include "context.h"
+
+/*
+ * 使用前请新建一个叫做token.h文件
+ * 里面写入 #define MyToken "<your token>"
+*/
 
 #define CURL_STATICLIB
 
@@ -156,9 +162,10 @@ bool Service::CheckUpdate(){
 	CURL* curl;
 	string UserAgent;
 	string url="https://api.github.com/repos/kao-chinaklp/MySocket/releases/latest";
-    string AccessToken="Authorization: token <your token>";
+    string AccessToken="Authorization: token ";
     string response;
 	string LatestVersion;
+	AccessToken.append(MyToken);
 	curl=curl_easy_init();
     UserAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36 Edg/115.0.1901.183";
     curl_easy_setopt(curl, CURLOPT_USERAGENT, UserAgent.c_str());

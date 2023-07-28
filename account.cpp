@@ -1,11 +1,13 @@
 #include "account.h"
 #include "context.h"
 
+#include <chrono>
+#include <thread>
+
 Account::Account(string username, MysqlPool* _db){
 	char* err;
 	UserName=username;
 	db=_db;
-	ERR_load_crypto_strings();
 	ctx=EVP_MD_CTX_new();
 	if(ctx==nullptr){
 		ERR_error_string(ERR_get_error(), err);
@@ -55,11 +57,11 @@ bool Account::encrypt(const char* msg){
 }
 
 bool Account::Login(string UserName, string PassWord){
-	bool State;
+	bool State, Flag=false;
 	if(!encrypt(PassWord.c_str()))
 		return false;
-	db->Operate("select * from userinfo", op::Query, 
-			    UserName, (const char*)(char*)buff, &State, false);
+	db->Operate(op::Query, UserName, (const char*)(char*)buff, &State, false, &Flag);
+	while(!Flag)std::this_thread::sleep_for(std::chrono::milliseconds(10));
 	if(State){
 		this->UserName=UserName;
 		return true;
@@ -71,22 +73,32 @@ bool Account::Login(string UserName, string PassWord){
 }
 
 bool Account::Register(string UserName, string PassWord){
-	bool State;
-	if(!encrypt(PassWord.c_str()))
-		return false;
-	db->Operate("select * from userinfo;", op::Query, 
-			    UserName, (const char*)(char*)buff, &State, false);
+	bool State, Flag=false;
+	if(!encrypt(PassWord.c_str()))return false;
+	db->Operate(op::Query, UserName, (const char*)(char*)buff, &State, false, &Flag);
+	while(!Flag)std::this_thread::sleep_for(std::chrono::milliseconds(10));
 	if(!State){
 		Err=RegisterErr;
 		return false;
 	}
-	db->Operate("insert into userinfo ", op::Insert, UserName, PassWord.c_str(), &State, true);
+	Flag=false;
+	db->Operate(op::Insert, UserName, PassWord.c_str(), &State, NULL, &Flag);
+	while(!Flag)std::this_thread::sleep_for(std::chrono::milliseconds(10));
 	if(!State){
 		Err=AccountErr;
 		return false;
 	}
-	else{
-		this->UserName=UserName;
-		return true;
+	this->UserName=UserName;
+	return true;
+}
+
+bool Account::Logoff(string UserName){
+	bool State, Flag=false;
+	db->Operate(op::Alter, UserName, "", &State, NULL, &Flag);
+	while(!Flag)std::this_thread::sleep_for(std::chrono::milliseconds(10));
+	if(!State){
+		Err=AccountErr;
+		return false;
 	}
+	return true;
 }
