@@ -3,6 +3,30 @@
 #include <chrono>
 #include <thread>
 
+void* ThreadFunc(void* threadData){
+    CThreadPool* Data=(CThreadPool*)threadData;
+    pthread_t tid=pthread_self();
+    while(true){
+        pthread_mutex_lock(&Data->pthreadMutex);
+        //没有任务，等待执行
+        while(Data->queTaskList.empty()&&!Data->shutdown)
+            pthread_cond_wait(&Data->pthreadCond, &Data->pthreadMutex);
+        if(Data->queTaskList.empty()&&Data->shutdown){
+            pthread_mutex_unlock(&Data->pthreadMutex);
+            pthread_exit(NULL);
+        }
+        CTask* task=Data->queTaskList.front();
+        Data->queTaskList.pop_front();
+        //取完任务后放锁
+        pthread_mutex_unlock(&Data->pthreadMutex);
+        Data->MoveToBusy(tid);
+        task->Run();
+        delete task;
+        Data->MoveToIdle(tid);
+    }
+    return (void*)0;
+}
+
 string CTask::GetTaskName(){
     return TaskName;
 }
@@ -54,30 +78,6 @@ deque<pthread_t>::iterator CThreadPool::find(pthread_t tid){
         if(*p==tid)break;
     pthread_mutex_unlock(&pthreadMutex);
     return p;
-}
-
-void* ThreadFunc(void* threadData){
-    CThreadPool* Data=(CThreadPool*)threadData;
-    pthread_t tid=pthread_self();
-    while(true){
-        pthread_mutex_lock(&Data->pthreadMutex);
-        //没有任务，等待执行
-        while(Data->queTaskList.empty()&&!Data->shutdown)
-            pthread_cond_wait(&Data->pthreadCond, &Data->pthreadMutex);
-        if(Data->queTaskList.empty()&&Data->shutdown){
-            pthread_mutex_unlock(&Data->pthreadMutex);
-            pthread_exit(NULL);
-        }
-        CTask* task=Data->queTaskList.front();
-        Data->queTaskList.pop_front();
-        //取完任务后放锁
-        pthread_mutex_unlock(&Data->pthreadMutex);
-        Data->MoveToBusy(tid);
-        task->Run();
-        delete task;
-        Data->MoveToIdle(tid);
-    }
-    return (void*)0;
 }
 
 CThreadPool::CThreadPool(int threadNum){
