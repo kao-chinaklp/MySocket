@@ -3,7 +3,8 @@
 
 ## 构成
 主体：MySocket  
-更新器：MySocket-updater
+更新器：MySocket-updater  
+[↑传送门]("https://github.com/kao-chinaklp/MySocket-Updater")
 
 ## 关于本体
 本体调用了curl、openssl和mysql的库，更新器调用了curl和json的库，但库本体不保留在项目中，编译/运行的时候记得自行添加。
@@ -74,5 +75,5 @@
 暂无 
 
 ## 待添加的功能（最好能添加）
-1.服务端可用的指令功能；
+1.服务端可用的指令功能；  
 2.文件传输功能。
