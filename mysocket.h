@@ -41,15 +41,15 @@ class MyTask:public CTask{
 
 class MySocket{
     private:
+        MySSL* ssl;
         Logger* mLog;
         MysqlPool* db;
-        MySSL* ssl;
         SOCKET server;
         SOCKET s_accept;
+        CThreadPool* Pool;
         deque<SSL*> SSLList;
         SOCKADDR_IN server_addr;
         SOCKADDR_IN accept_addr;
-        CThreadPool* Pool;
         int Port;
         string IP;
         string cert;

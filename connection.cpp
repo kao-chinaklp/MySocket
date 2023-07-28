@@ -8,10 +8,24 @@ Connection::~Connection(){
     if(Conn!=nullptr)mysql_close(Conn);
 }
 
+unsigned int Connection::GetError(){
+    return mysql_errno(Conn);
+}
+
 bool Connection::Create(string TableName){
     string sql=CreateSqlF+TableName+CreateSqlB;
     if(mysql_query(Conn, sql.c_str()))return false;
     return true;
+}
+
+bool Connection::Update(string sql){
+    if(mysql_query(Conn, sql.c_str()))return false;
+    return true;
+}
+
+MYSQL_RES* Connection::Query(string sql){
+    if(mysql_query(Conn, sql.c_str()))return nullptr;
+    return mysql_use_result(Conn);
 }
 
 bool Connection::Init(string dbname, string TableName){
@@ -24,12 +38,6 @@ bool Connection::Init(string dbname, string TableName){
         return Create(TableName);
     }
     return true;
-}
-
-bool Connection::Connect(string IP, unsigned short port, string username, string psw, string dbname){
-    MYSQL* p=mysql_real_connect(Conn, IP.c_str(), username.c_str(),
-                                psw.c_str(), dbname.c_str(), port, nullptr, 0);
-    return p!=nullptr;
 }
 
 int Connection::CheckTable(string dbname, string TableName){
@@ -52,16 +60,8 @@ int Connection::CheckTable(string dbname, string TableName){
     return 0;
 }
 
-bool Connection::Update(string sql){
-    if(mysql_query(Conn, sql.c_str()))return false;
-    return true;
-}
-
-MYSQL_RES* Connection::Query(string sql){
-    if(mysql_query(Conn, sql.c_str()))return nullptr;
-    return mysql_use_result(Conn);
-}
-
-unsigned int Connection::GetError(){
-    return mysql_errno(Conn);
+bool Connection::Connect(string IP, unsigned short port, string username, string psw, string dbname){
+    MYSQL* p=mysql_real_connect(Conn, IP.c_str(), username.c_str(),
+                                psw.c_str(), dbname.c_str(), port, nullptr, 0);
+    return p!=nullptr;
 }

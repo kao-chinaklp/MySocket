@@ -6,6 +6,10 @@ using std::string;
 
 string key_psw;
 
+MySSL::~MySSL(){
+    Close();
+}
+
 string GetErrBuf(){
     char Buf[1024];
     memset(Buf, 0, 1024);

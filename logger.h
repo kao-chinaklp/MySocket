@@ -45,10 +45,10 @@ namespace logger{
 
     // 控制台
     class ConsoleLogger:public Log{
+        using Log::Log;
         const char Warn[5]="Warn";
         const char Error[6]="Error";
         const char Fatal[6]="Fatal";
-        using Log::Log;
         virtual void Output(const char* tm, const char* nLevel, const char* msg);
     };
 
@@ -89,8 +89,8 @@ namespace logger{
 
 		private:
 			int QueueSize;
-			CThreadPool* Pool;
 			string StartTime;
+			CThreadPool* Pool;
 	};
 	
     //namespace logger

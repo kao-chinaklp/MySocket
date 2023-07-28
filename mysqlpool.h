@@ -23,16 +23,16 @@ class DBOperator:public CTask{
                      const char* _username, const char* _psw, bool* _s, bool _mode, bool* _Flag):
                 cmd(_cmd), type(_type), nLog(_Log), db(_db),
                 UserName(_username), PassWord(_psw), State(_s), mode(_mode), Flag(_Flag){}
-                Logger* nLog;
-                Connection* db;
                 op type;
                 string cmd;
+                Logger* nLog;
+                Connection* db;
 
-                const char* UserName;
-                const char* PassWord;
+                bool* Flag;
                 bool* State;
                 bool mode; // 0 == login 1 == register
-                bool* Flag;
+                const char* UserName;
+                const char* PassWord;
         };
 
     public:
@@ -41,8 +41,8 @@ class DBOperator:public CTask{
         void GetInfo(Info _info);
 
     private:
-        Connection* db;
         Info info;
+        Connection* db;
 };
 
 class MysqlPool{
@@ -55,12 +55,12 @@ class MysqlPool{
         int Operate(op _t, string _username, const char* _password, bool* _s, bool mode, bool* Flag);
 
     private:
-        string TableName;
         Logger* nLog;
         Connection* db;
-        CThreadPool* Pool;
         regex pattern;
         std::smatch res;
+        string TableName;
+        CThreadPool* Pool;
         unsigned int QueueSize;
         std::map<cfg, bool>Flag;
 };

@@ -34,13 +34,13 @@ class Connection{
     public:
         Connection();
         ~Connection();
+        unsigned int GetError();
         bool Create(string TableName);
+        bool Update(string sql);//增删
+        MYSQL_RES* Query(string sql);//查询
         bool Init(string dbname, string TableName);
         int CheckTable(string dbname, string TableName);
         bool Connect(string IP, unsigned short port, string username, string psw, string dbname);
-        bool Update(string sql);//增删改
-        MYSQL_RES* Query(string sql);//查询
-        unsigned int GetError();
 };
 
 #endif

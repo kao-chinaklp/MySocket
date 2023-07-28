@@ -21,10 +21,10 @@ class Account{
 		~Account();
 		string GetErr();
 		string GetName();
+		bool Logoff(string UserName);
 		bool encrypt(const char* msg);
 		bool Login(string UserName, string PassWord);
 		bool Register(string UserName, string PassWord);
-		bool Logoff(string UserName);
 };
 
 #endif

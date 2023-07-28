@@ -3,34 +3,57 @@
 #include <chrono>
 #include <thread>
 
-void CTask::SetConnFd(int data){
-    connfd=data;
+string CTask::GetTaskName(){
+    return TaskName;
 }
 
 int CTask::GetConnFd(){
     return connfd;
 }
 
+void CTask::SetConnFd(int data){
+    connfd=data;
+}
+
 void CTask::SetTaskName(const string _taskname){
     TaskName=_taskname;
 }
 
-string CTask::GetTaskName(){
-    return TaskName;
+int CThreadPool::Create(){
+    pthread_id=(pthread_t*)malloc(sizeof(pthread_t)*TaskNum);
+    for(int i=0;i<TaskNum;i++)
+        pthread_create(&pthread_id[i], NULL, ThreadFunc, this);
+    return 0;
 }
 
-CThreadPool::CThreadPool(int threadNum){
-    shutdown=false;
-    TaskNum=threadNum;
-    pthreadMutex=PTHREAD_MUTEX_INITIALIZER;
-    pthreadCond=PTHREAD_COND_INITIALIZER;
-    Create();
+void CThreadPool::Sleep(int ms){
+    std::this_thread::sleep_for(std::chrono::milliseconds(ms));
 }
 
-CThreadPool::~CThreadPool(){
-    StopAll();
-    pthread_mutex_destroy(&pthreadMutex);
-    pthread_cond_destroy(&pthreadCond);
+int CThreadPool::MoveToIdle(pthread_t tid){
+    deque<pthread_t>::iterator p=find(tid);
+    if(p==BusyQue.end())return -1;
+    pthread_mutex_lock(&pthreadMutex);
+    BusyQue.erase(p);
+    pthread_mutex_unlock(&pthreadMutex);
+    return 1;
+}
+
+int CThreadPool::MoveToBusy(pthread_t tid){
+    pthread_mutex_lock(&pthreadMutex);
+    BusyQue.push_back(tid);
+    pthread_mutex_unlock(&pthreadMutex);
+    return 1;
+}
+
+deque<pthread_t>::iterator CThreadPool::find(pthread_t tid){
+    deque<pthread_t>::iterator p;
+    while(pthread_mutex_trylock(&pthreadMutex)==EBUSY)
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    for(p=BusyQue.begin();p!=BusyQue.end();p++)
+        if(*p==tid)break;
+    pthread_mutex_unlock(&pthreadMutex);
+    return p;
 }
 
 void* ThreadFunc(void* threadData){
@@ -57,50 +80,18 @@ void* ThreadFunc(void* threadData){
     return (void*)0;
 }
 
-int CThreadPool::MoveToIdle(pthread_t tid){
-    deque<pthread_t>::iterator p=find(tid);
-    if(p==BusyQue.end())return -1;
-    pthread_mutex_lock(&pthreadMutex);
-    BusyQue.erase(p);
-    pthread_mutex_unlock(&pthreadMutex);
-    return 1;
+CThreadPool::CThreadPool(int threadNum){
+    shutdown=false;
+    TaskNum=threadNum;
+    pthreadMutex=PTHREAD_MUTEX_INITIALIZER;
+    pthreadCond=PTHREAD_COND_INITIALIZER;
+    Create();
 }
 
-int CThreadPool::MoveToBusy(pthread_t tid){
-    pthread_mutex_lock(&pthreadMutex);
-    BusyQue.push_back(tid);
-    pthread_mutex_unlock(&pthreadMutex);
-    return 1;
-}
-
-int CThreadPool::AddTask(CTask *task){
-    pthread_mutex_lock(&pthreadMutex);
-    queTaskList.push_back(task);
-    pthread_mutex_unlock(&pthreadMutex);
-    //发信号
-    pthread_cond_signal(&pthreadCond);
-    return 0;
-}
-
-int CThreadPool::Create(){
-    pthread_id=(pthread_t*)malloc(sizeof(pthread_t)*TaskNum);
-    for(int i=0;i<TaskNum;i++)
-        pthread_create(&pthread_id[i], NULL, ThreadFunc, this);
-    return 0;
-}
-
-void CThreadPool::Sleep(int ms){
-    std::this_thread::sleep_for(std::chrono::milliseconds(ms));
-}
-
-deque<pthread_t>::iterator CThreadPool::find(pthread_t tid){
-    deque<pthread_t>::iterator p;
-    while(pthread_mutex_trylock(&pthreadMutex)==EBUSY)
-        std::this_thread::sleep_for(std::chrono::milliseconds(50));
-    for(p=BusyQue.begin();p!=BusyQue.end();p++)
-        if(*p==tid)break;
-    pthread_mutex_unlock(&pthreadMutex);
-    return p;
+CThreadPool::~CThreadPool(){
+    StopAll();
+    pthread_mutex_destroy(&pthreadMutex);
+    pthread_cond_destroy(&pthreadCond);
 }
 
 int CThreadPool::StopAll(){
@@ -141,4 +132,13 @@ int CThreadPool::GetTaskSize(){
 
 int CThreadPool::GetConnFd(int index){
     return queTaskList[index]->GetConnFd();
+}
+
+int CThreadPool::AddTask(CTask *task){
+    pthread_mutex_lock(&pthreadMutex);
+    queTaskList.push_back(task);
+    pthread_mutex_unlock(&pthreadMutex);
+    //发信号
+    pthread_cond_signal(&pthreadCond);
+    return 0;
 }
