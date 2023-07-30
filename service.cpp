@@ -250,13 +250,13 @@ void Service::GenerateCertificate(string cert, string _key){
     name=X509_NAME_new();
     while(true){
         printf(InputArea);
-        scanf("%16s", Area);
+        scanf_s("%s", Area, 16);
         if(Area[0]=='\0')printf(IllegalInput);
         else break;
     }
     while(true){
         printf(InputOwner);
-        scanf("%64s", Owner);
+        scanf_s("%s", Owner, 64);
         if(Owner[0]=='\0')printf(IllegalInput);
         else break;
     }

@@ -1,12 +1,12 @@
 #ifndef _LOGGER_H_
 #define _LOGGER_H_
 
-#include "thread.h" 
-
 #include <mutex>
 #include <chrono>
 #include <sstream>
 #include <fstream>
+
+#include "thread.h"
 
 using std::mutex;
 using std::ofstream;

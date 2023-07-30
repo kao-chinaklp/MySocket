@@ -124,8 +124,8 @@ Logger::Logger(int queue_size){
         #else
         localtime_r(&tt, time_tm);
         #endif
-    snprintf(str, sizeof(str), "%d-%02d-%02d %02d:%02d:%02d", 
-        time_tm->tm_year+1900, time_tm->tm_mon+1, time_tm->tm_mday, 
+    snprintf(str, sizeof(str), "%d-%02d-%02d %02d:%02d:%02d",
+        time_tm->tm_year+1900, time_tm->tm_mon+1, time_tm->tm_mday,
         time_tm->tm_hour, time_tm->tm_min, time_tm->tm_sec);
     for(int i=0;i<19;i++)StartTime.push_back(str[i]);
 }
