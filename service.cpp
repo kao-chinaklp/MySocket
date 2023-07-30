@@ -8,8 +8,8 @@
 #define CURL_STATICLIB
 
 #include <curl/curl.h>
-#include <openssl/rsa.h>
 #include <openssl/pem.h>
+#include <openssl/rsa.h>
 #ifdef __linux__
 #include <unistd.h>
 #else
