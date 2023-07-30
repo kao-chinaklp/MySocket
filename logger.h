@@ -18,8 +18,8 @@ namespace logger{
         // 文本缓冲区的类
         class LogStream:public std::ostringstream{
             public:
-                LogStream(Log& _log, level _level):Logger(_log), nLevel(_level){};
-                LogStream(const LogStream& ls):Logger(ls.Logger), nLevel(ls.nLevel){};
+                LogStream(Log& _log, level _level):Logger(_log), nLevel(_level){}
+                LogStream(const LogStream& ls):Logger(ls.Logger), nLevel(ls.nLevel){}
                 ~LogStream(){
                     Logger.EndLine(nLevel, rdbuf()->str().c_str());
                 }
@@ -33,7 +33,7 @@ namespace logger{
             Log()=default;
             virtual ~Log()=default;
             virtual LogStream operator()(level nLevel=level::Info);
-        
+
         private:
             string GetTime();
             void EndLine(level nLevel, const char* msg);
@@ -79,20 +79,20 @@ namespace logger{
             FileLogger ofl;
             ConsoleLogger ocl;
     };
-	
-	class Logger{
-		public:
-			Logger(int queue_size=5);
+    
+    class Logger{
+        public:
+            Logger(int queue_size=5);
             ~Logger();
             void Close();
-			void Output(string msg, level nLevel);
+            void Output(string msg, level nLevel);
 
-		private:
-			int QueueSize;
-			string StartTime;
-			CThreadPool* Pool;
-	};
-	
+        private:
+            int QueueSize;
+            string StartTime;
+            CThreadPool* Pool;
+    };
+    
     //namespace logger
 }
 

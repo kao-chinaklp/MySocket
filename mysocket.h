@@ -5,8 +5,8 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <arpa/inet.h>
-#include <sys/socket.h>
 #include <netinet/in.h>
+#include <sys/socket.h>
 #else
 #include <winsock2.h>
 #endif
@@ -27,9 +27,9 @@ class MyTask:public CTask{
         MySocket* sock;
         const char login[6]="login";
         const char reg[9]="register";
-    
+
     public:
-        MyTask(){};
+        MyTask(){}
         int Run();
         void GetAddr(string addr);
         void GetSock(MySocket* socket);

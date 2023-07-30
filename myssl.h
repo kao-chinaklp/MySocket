@@ -1,9 +1,10 @@
 #ifndef MYSSL_H_
 #define MYSSL_H_
 
-#include <string>
 #include <openssl/ssl.h>
 #include <openssl/err.h>
+
+#include <string>
 
 using std::string;
 
@@ -14,7 +15,7 @@ int PasswordCallback(char* buf, int size, int flag, void* userdata);
 
 class MySSL{
     public:
-        MySSL():ctx(nullptr){};
+        MySSL():ctx(nullptr){}
         ~MySSL();
         void Close();
         SSL_CTX* GetCTX();

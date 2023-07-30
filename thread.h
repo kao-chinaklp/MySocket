@@ -1,9 +1,10 @@
 #ifndef THREAD_H_
 #define THREAD_H_
 
+#include <pthread.h>
+
 #include <deque>
 #include <string>
-#include <pthread.h>
 
 using std::deque;
 using std::string;
@@ -12,7 +13,7 @@ class CTask{
     protected:
         string TaskName;
         int connfd;//地址
-    
+
     public:
         CTask()=default;
         CTask(string &taskName):TaskName(taskName), connfd(0){}
@@ -33,7 +34,7 @@ class CThreadPool{
         deque<pthread_t>BusyQue;//忙碌队列
         pthread_mutex_t pthreadMutex;//锁
         pthread_cond_t pthreadCond;//条件变量
-    
+
     protected:
         int Create();//创建
         void Sleep(int ms);

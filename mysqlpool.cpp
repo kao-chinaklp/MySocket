@@ -1,7 +1,8 @@
-#include "context.h"
 #include "mysqlpool.h"
 
 #include <map>
+
+#include "context.h"
 
 using std::ios;
 using std::map;
@@ -132,7 +133,7 @@ void MysqlPool::Close(){
     nLog->Output(DBDisconnect, level::Info);
 }
 
-int MysqlPool::Operate(op _t, string _username, const char* _password, 
+int MysqlPool::Operate(op _t, string _username, const char* _password,
                        bool* _s, bool mode, bool* Flag){
     string sql;
     DBOperator* ta=new DBOperator;

@@ -1,11 +1,11 @@
 #ifndef MYSQLPOOL_H_
 #define MYSQLPOOL_H_
 
-#include "logger.h"
-#include "connection.h"
-
 #include <map>
 #include <regex>
+
+#include "logger.h"
+#include "connection.h"
 
 using std::regex;
 
@@ -18,7 +18,7 @@ class DBOperator:public CTask{
         class Info{
             public:
                 Info()=default;
-                Info(string _cmd, op _type, Logger* _Log, Connection* _db, 
+                Info(string _cmd, op _type, Logger* _Log, Connection* _db,
                      const char* _username, const char* _psw, bool* _s, bool _mode, bool* _Flag):
                 cmd(_cmd), type(_type), nLog(_Log), db(_db),
                 UserName(_username), PassWord(_psw), State(_s), mode(_mode), Flag(_Flag){}
@@ -35,7 +35,7 @@ class DBOperator:public CTask{
         };
 
     public:
-        DBOperator(){};
+        DBOperator(){}
         int Run();
         void GetInfo(Info _info);
 

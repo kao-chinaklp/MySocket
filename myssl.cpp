@@ -18,12 +18,12 @@ string GetErrBuf(){
 }
 
 int PasswordCallback(char* buf, int size, int flag, void* userdata){
-	int len=key_psw.size();
-	if(len<size){
-		memcpy(buf, key_psw.c_str(), len);
-		return len;
-	}
-	return 0;
+    int len=key_psw.size();
+    if(len<size){
+        memcpy(buf, key_psw.c_str(), len);
+        return len;
+    }
+    return 0;
 }
 
 bool MySSL::init(string cert, string key){

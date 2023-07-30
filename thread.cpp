@@ -4,7 +4,7 @@
 #include <thread>
 
 void* ThreadFunc(void* threadData){
-    CThreadPool* Data=(CThreadPool*)threadData;
+    CThreadPool* Data=reinterpret_cast<CThreadPool*>(threadData);
     pthread_t tid=pthread_self();
     while(true){
         pthread_mutex_lock(&Data->pthreadMutex);
@@ -24,7 +24,7 @@ void* ThreadFunc(void* threadData){
         delete task;
         Data->MoveToIdle(tid);
     }
-    return (void*)0;
+    return reinterpret_cast<pthread_t*>(0);
 }
 
 string CTask::GetTaskName(){
@@ -44,7 +44,7 @@ void CTask::SetTaskName(const string _taskname){
 }
 
 int CThreadPool::Create(){
-    pthread_id=(pthread_t*)malloc(sizeof(pthread_t)*TaskNum);
+    pthread_id=reinterpret_cast<pthread_t*>(malloc(sizeof(pthread_t)*TaskNum));
     for(int i=0;i<TaskNum;i++)
         pthread_create(&pthread_id[i], NULL, ThreadFunc, this);
     return 0;

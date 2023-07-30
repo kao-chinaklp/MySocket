@@ -3,11 +3,11 @@
 
 // 单个连接
 
-#include "mysql.h"
-
 #include <map>
-#include <string>
 #include <chrono>
+#include <string>
+
+#include "mysql.h"
 
 using std::map;
 using std::string;

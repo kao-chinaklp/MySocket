@@ -232,7 +232,7 @@ int MySocket::Run(int type){
     //1=TCP 0=UDP
     if(type==1)server=socket(AF_INET, SOCK_STREAM, 0);
     else server=socket(AF_INET, SOCK_DGRAM, 0);
-    if(bind(server, (SOCKADDR*)&server_addr, sizeof(SOCKADDR))==SOCKET_ERROR){
+    if(bind(server, reinterpret_cast<SOCKADDR*>(&server_addr), sizeof(SOCKADDR))==SOCKET_ERROR){
         _Log(BindFatal, level::Fatal);
         throw 0;
     }
@@ -243,7 +243,7 @@ int MySocket::Run(int type){
     else _Log(SuccessStartF+IP+":"+to_string(Port)+SuccessStartB, level::Info);
     int len=sizeof(SOCKADDR);
     while(true){
-        s_accept=accept(server, (SOCKADDR*)&accept_addr, &len);
+        s_accept=accept(server, reinterpret_cast<SOCKADDR*>(&accept_addr), &len);
         const string _IP(inet_ntoa(accept_addr.sin_addr));
         const string _Port=to_string(ntohs(accept_addr.sin_port));
         const string _Addr=_IP+":"+_Port;

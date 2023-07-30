@@ -1,11 +1,13 @@
 #include "logger.h"
-#include "context.h"
 
 #include <map>
 #include <regex>
+#include <ctime>
 #include <cstring>
 #include <cstdlib>
 #include <filesystem>
+
+#include "context.h"
 
 #define RESET "\033[0m"
 #define RED "\033[31m"
@@ -31,7 +33,7 @@ static const map<level, const char*>LevelStr{
 };
 
 ostream& operator<<(ostream& stream, const string msg){
-	return stream<<msg;
+    return stream<<msg;
 }
 
 Log::LogStream Log::operator()(level nLevel){
@@ -40,11 +42,16 @@ Log::LogStream Log::operator()(level nLevel){
 
 string Log::GetTime(){
     string strTime;
-	char str[20]={0};
-	time_t tt=system_clock::to_time_t(system_clock::now());
-	auto time_tm=localtime(&tt);
-	sprintf(str, "%d-%02d-%02d %02d:%02d:%02d", 
-        time_tm->tm_year+1900, time_tm->tm_mon+1, time_tm->tm_mday, 
+    char str[20]={0};
+    time_t tt=system_clock::to_time_t(system_clock::now());
+    struct tm* time_tm=nullptr;
+    #ifdef _WIN32
+    localtime_s(time_tm, &tt);
+    #else
+    localtime_r(&tt, time_tm);
+    #endif
+    snprintf(str, sizeof(str), "%d-%02d-%02d %02d:%02d:%02d",
+        time_tm->tm_year+1900, time_tm->tm_mon+1, time_tm->tm_mday,
         time_tm->tm_hour, time_tm->tm_min, time_tm->tm_sec);
     for(int i=0;i<19;i++)strTime.push_back(str[i]);
     return strTime;
@@ -93,8 +100,8 @@ void FileLogger::Output(const char* tm, const char* nLevel, const char* msg){
 
 int MyLog::Run(){
     if(nLevel!=level::Input)ocl(nLevel)<<msg;
-	ofl(nLevel)<<msg;
-	return 0;
+    ofl(nLevel)<<msg;
+    return 0;
 }
 
 void MyLog::GetInfo(string _msg, level _Level){
@@ -105,15 +112,15 @@ void MyLog::GetInfo(string _msg, level _Level){
 Logger::Logger(int queue_size){
     path folder=current_path()/"logs";
     create_directory(folder);
-	QueueSize=queue_size;
-	Pool=new CThreadPool(QueueSize);
-	char str[20]={0};
-	time_t tt=system_clock::to_time_t(system_clock::now());
-	auto time_tm=localtime(&tt);
-	sprintf(str, "%d-%02d-%02d %02d:%02d:%02d", 
-	    time_tm->tm_year+1900, time_tm->tm_mon+1, time_tm->tm_mday, 
-	    time_tm->tm_hour, time_tm->tm_min, time_tm->tm_sec);
-	for(int i=0;i<19;i++)StartTime.push_back(str[i]);
+    QueueSize=queue_size;
+    Pool=new CThreadPool(QueueSize);
+    char str[20]={0};
+    time_t tt=system_clock::to_time_t(system_clock::now());
+    auto time_tm=localtime(&tt);
+    sprintf(str, "%d-%02d-%02d %02d:%02d:%02d", 
+        time_tm->tm_year+1900, time_tm->tm_mon+1, time_tm->tm_mday, 
+        time_tm->tm_hour, time_tm->tm_min, time_tm->tm_sec);
+    for(int i=0;i<19;i++)StartTime.push_back(str[i]);
 }
 
 Logger::~Logger(){
@@ -121,8 +128,8 @@ Logger::~Logger(){
 }
 
 void Logger::Output(string msg, level nLevel){
-	MyLog* ta=new MyLog(StartTime);
-	ta->GetInfo(msg, nLevel);
-	ta->SetTaskName("log");
-	Pool->AddTask(ta);
+    MyLog* ta=new MyLog(StartTime);
+    ta->GetInfo(msg, nLevel);
+    ta->SetTaskName("log");
+    Pool->AddTask(ta);
 }
