@@ -9,6 +9,7 @@ Account::Account(string username, MysqlPool* _db){
     char* err;
     UserName=username;
     db=_db;
+    ctx=nullptr;
     ctx=EVP_MD_CTX_new();
     if(ctx==nullptr){
         ERR_error_string(ERR_get_error(), err);

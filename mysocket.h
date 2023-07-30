@@ -29,7 +29,7 @@ class MyTask:public CTask{
         const char reg[9]="register";
 
     public:
-        MyTask(){}
+        MyTask();
         int Run();
         void GetAddr(string addr);
         void GetSock(MySocket* socket);

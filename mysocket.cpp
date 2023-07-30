@@ -27,12 +27,9 @@ static const map<scfg, string>SGetStr{
     {scfg::QueSize, "sock-que-size"}
 };
 
-void MyTask::GetSock(MySocket* socket){
-    sock=socket;
-}
-
-void MyTask::GetAddr(string addr){
-    this->Addr=addr;
+MyTask::MyTask(){
+    ssl=nullptr;
+    sock=nullptr;
 }
 
 int MyTask::Run(){
@@ -41,6 +38,7 @@ int MyTask::Run(){
         return -1;
     }
     SSL* ssl=SSL_new(sock->GetSSL()->GetCTX());
+    if(ssl==nullptr)sock->_Log("无法为"+Addr+"初始化ssl", level::Error);
     SSL_set_fd(ssl, connfd);
     if(SSL_accept(ssl)<=0){
         sock->_Log(ConnectFailed, level::Warn);
@@ -103,6 +101,14 @@ int MyTask::Run(){
     closesocket(connfd);
     #endif
     return 0;
+}
+
+void MyTask::GetSock(MySocket* socket){
+    sock=socket;
+}
+
+void MyTask::GetAddr(string addr){
+    this->Addr=addr;
 }
 
 int MyTask::Receive(SSL* ssl, char* recv, string UserInfo){
