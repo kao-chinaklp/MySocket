@@ -69,7 +69,7 @@ namespace logger{
     
     class MyLog:public CTask{
         public:
-            MyLog(string FileName):ofl(FileLogger(FileName)){};
+            MyLog(string FileName):ofl(FileLogger(FileName)){}
             void GetInfo(string _msg, level _Level=level::Info);
             int Run();
 

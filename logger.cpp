@@ -45,11 +45,12 @@ string Log::GetTime(){
     char str[20]={0};
     time_t tt=system_clock::to_time_t(system_clock::now());
     struct tm* time_tm=nullptr;
-    #ifdef _WIN32
-    localtime_s(time_tm, &tt);
-    #else
-    localtime_r(&tt, time_tm);
-    #endif
+    while(time_tm==nullptr)
+        #ifdef _WIN32
+        localtime_s(time_tm, &tt);
+        #else
+        localtime_r(&tt, time_tm);
+        #endif
     snprintf(str, sizeof(str), "%d-%02d-%02d %02d:%02d:%02d",
         time_tm->tm_year+1900, time_tm->tm_mon+1, time_tm->tm_mday,
         time_tm->tm_hour, time_tm->tm_min, time_tm->tm_sec);
@@ -117,11 +118,12 @@ Logger::Logger(int queue_size){
     char str[20]={0};
     time_t tt=system_clock::to_time_t(system_clock::now());
     struct tm* time_tm=nullptr;
-    #ifdef _WIN32
-    localtime_s(time_tm, &tt);
-    #else
-    localtime_r(&tt, time_tm);
-    #endif
+    while(time_tm==nullptr)
+        #ifdef _WIN32
+        localtime_s(time_tm, &tt);
+        #else
+        localtime_r(&tt, time_tm);
+        #endif
     snprintf(str, sizeof(str), "%d-%02d-%02d %02d:%02d:%02d", 
         time_tm->tm_year+1900, time_tm->tm_mon+1, time_tm->tm_mday, 
         time_tm->tm_hour, time_tm->tm_min, time_tm->tm_sec);
