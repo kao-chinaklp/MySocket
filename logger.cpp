@@ -44,16 +44,15 @@ string Log::GetTime(){
     string strTime;
     char str[20]={0};
     time_t tt=system_clock::to_time_t(system_clock::now());
-    struct tm* time_tm=nullptr;
-    while(time_tm==nullptr)
-        #ifdef _WIN32
-        localtime_s(time_tm, &tt);
-        #else
-        localtime_r(&tt, time_tm);
-        #endif
-    snprintf(str, sizeof(str), "%d-%02d-%02d %02d:%02d:%02d",
-        time_tm->tm_year+1900, time_tm->tm_mon+1, time_tm->tm_mday,
-        time_tm->tm_hour, time_tm->tm_min, time_tm->tm_sec);
+    struct tm time_tm;
+    #ifdef _WIN32
+    localtime_s(&time_tm, &tt);
+    #else
+    localtime_r(&tt, &time_tm);
+    #endif
+    snprintf(str, 20, "%d-%02d-%02d %02d:%02d:%02d",
+        time_tm.tm_year+1900, time_tm.tm_mon+1, time_tm.tm_mday,
+        time_tm.tm_hour, time_tm.tm_min, time_tm.tm_sec);
     for(int i=0;i<19;i++)strTime.push_back(str[i]);
     return strTime;
 }
@@ -117,16 +116,15 @@ Logger::Logger(int queue_size){
     Pool=new CThreadPool(QueueSize);
     char str[20]={0};
     time_t tt=system_clock::to_time_t(system_clock::now());
-    struct tm* time_tm=nullptr;
-    while(time_tm==nullptr)
-        #ifdef _WIN32
-        localtime_s(time_tm, &tt);
-        #else
-        localtime_r(&tt, time_tm);
-        #endif
-    snprintf(str, sizeof(str), "%d-%02d-%02d %02d:%02d:%02d",
-        time_tm->tm_year+1900, time_tm->tm_mon+1, time_tm->tm_mday,
-        time_tm->tm_hour, time_tm->tm_min, time_tm->tm_sec);
+    struct tm time_tm;
+    #ifdef _WIN32
+    localtime_s(&time_tm, &tt);
+    #else
+    localtime_r(&tt, &time_tm);
+    #endif
+    snprintf(str, 20, "%d-%02d-%02d %02d:%02d:%02d",
+        time_tm.tm_year+1900, time_tm.tm_mon+1, time_tm.tm_mday,
+        time_tm.tm_hour, time_tm.tm_min, time_tm.tm_sec);
     for(int i=0;i<19;i++)StartTime.push_back(str[i]);
 }
 
