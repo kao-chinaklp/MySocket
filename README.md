@@ -7,7 +7,7 @@
 <https://github.com/kao-chinaklp/MySocket-Updater>
 
 ## 关于本体
-本体调用了curl、openssl和mysql的库，更新器调用了curl和json的库，但库本体不保留在项目中，编译/运行的时候记得自行添加。
+本体使用了curl、json、openssl和mysql的库，更新器使用了curl和json的库，但库本体不保留在项目中，编译/运行的时候记得自行添加。
 
 ## 更新日志
 ### 2023 6.24  
