@@ -1,6 +1,8 @@
 #include "mysocket.h"
 #include "context.h"
 
+#include <ws2tcpip.h>
+
 using std::ios;
 using std::map;
 using std::to_string;
@@ -16,7 +18,8 @@ static const map<string, scfg>SmapStr{
     {"key", scfg::Key},
     {"server-ip", scfg::IP},
     {"sock-port", scfg::Port},
-    {"sock-que-size", scfg::QueSize}
+    {"sock-que-size", scfg::QueSize},
+    {"mode", scfg::Mode}
 };
 
 static const map<scfg, string>SGetStr{
@@ -24,7 +27,8 @@ static const map<scfg, string>SGetStr{
     {scfg::Key, "key"},
     {scfg::IP, "server-ip"},
     {scfg::Port, "sock-port"},
-    {scfg::QueSize, "sock-que-size"}
+    {scfg::QueSize, "sock-que-size"},
+    {scfg::Mode, "mode"}
 };
 
 MyTask::MyTask(){
@@ -143,13 +147,6 @@ MySocket::MySocket(Logger* _L, MysqlPool* _db){
         throw 0;
     }
     #endif
-    server_addr.sin_family=AF_INET;
-    #ifdef __linux__
-    inet_aton(IP.c_str(), &server_addr.sin_addr);
-    #else
-    server_addr.sin_addr.S_un.S_addr=inet_addr(IP.c_str());
-    #endif
-    server_addr.sin_port=htons(Port);
 }
 
 MySocket::~MySocket(){
@@ -194,6 +191,10 @@ void MySocket::Init(){
         }
         else if(key=="sock-port")Port=atoi(value.c_str());
         else if(key=="sock-que-size")QueueSize=atoi(value.c_str());
+        else if(key=="mode"){
+            if(value=="ipv4")_mode=mode::ipv4;
+            if(value=="ipv6")_mode=mode::ipv6;
+        }
         else continue;
         Flag[SmapStr.find(key)->second]=true;
     }
@@ -219,6 +220,89 @@ void MySocket::Close(){
     delete ssl;
 }
 
+void MySocket::v4mode(type _type){
+    int opt=1;
+    int len=sizeof(SOCKADDR_IN);
+    int __type=(_type==type::tcp)?SOCK_STREAM:SOCK_DGRAM;
+    #ifdef __linux__
+    inet_aton(IP.c_str(), &server_addr.sin_addr);
+    #else
+    server_addr.sin_addr.S_un.S_addr=inet_addr(IP.c_str());
+    #endif
+    server_addr.sin_family=AF_INET;
+    server_addr.sin_port=htons(Port);
+    server=socket(AF_INET, __type, 0);
+    setsockopt(server, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<const void*>(&opt), sizeof(opt));// 设置端口复用
+    if(bind(server, reinterpret_cast<SOCKADDR*>(&server_addr), len)==SOCKET_ERROR){
+        _Log(BindFatal, level::Fatal);
+        throw 0;
+    }
+    if(listen(server, QueueSize)<0){
+        _Log(ListenFatal, level::Fatal);
+        throw 0;
+    }
+    else _Log(SuccessStartF+IP+":"+to_string(Port)+SuccessStartB, level::Info);
+    while(true){
+        s_accept=accept(server, reinterpret_cast<SOCKADDR*>(&accept_addr), &len);
+        char* tmp=new char[1024];
+        const string _IP(inet_ntop(AF_INET, &(accept_addr.sin_addr), tmp, sizeof(tmp)));
+        const string _Port=to_string(ntohs(accept_addr.sin_port));
+        const string _Addr=_IP+":"+_Port;
+        delete tmp;
+        _Log(_Addr+TryConnect, level::Info);
+        if(s_accept==SOCKET_ERROR){
+            _Log(_Addr+ConnectFatal, level::Info);
+            continue;
+        }
+        MyTask* ta=new MyTask;
+        ta->GetSock(this);
+        ta->GetAddr(_Addr);
+        ta->SetConnFd(s_accept);
+        ta->SetTaskName("sock"+to_string(Pool->GetTaskSize()));
+        Pool->AddTask(ta);
+    }
+}
+
+void MySocket::v6mode(type _type){
+    int len=sizeof(SOCKADDR_IN6);
+    int __type=(_type==type::tcp)?SOCK_STREAM:SOCK_DGRAM;
+    memset(&v6_server_addr, 0, len);
+    memset(&v6_accept_addr, 0, len);
+    v6_server_addr.sin6_port=htons(Port);
+    v6_server_addr.sin6_family=AF_INET6;
+    inet_pton(AF_INET6, IP.c_str(), &v6_accept_addr);
+    server=socket(AF_INET6, __type, 0);
+    setsockopt(server, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<const void*>(&opt), sizeof(opt));// 设置端口复用
+    if(bind(server, reinterpret_cast<SOCKADDR*>(&v6_server_addr), len)==SOCKET_ERROR){
+        _Log(BindFatal, level::Fatal);
+        throw 0;
+    }
+    if(listen(server, QueueSize)<0){
+        _Log(ListenFatal, level::Fatal);
+        throw 0;
+    }
+    else _Log(SuccessStartF+IP+":"+to_string(Port)+SuccessStartB, level::Info);
+    while(true){
+        s_accept=accept(server, reinterpret_cast<SOCKADDR*>(&v6_accept_addr), &len);
+        char* tmp=new char[1024];
+        const string _IP(inet_ntop(AF_INET6, reinterpret_cast<struct in6_addr*>(&(v6_accept_addr.sin6_addr)), tmp, sizeof(tmp)));
+        const string _Port=to_string(ntohs(v6_accept_addr.sin6_port));
+        const string _Addr=_IP+":"+_Port;
+        delete tmp;
+        _Log(_Addr+TryConnect, level::Info);
+        if(s_accept==SOCKET_ERROR){
+            _Log(_Addr+ConnectFatal, level::Info);
+            continue;
+        }
+        MyTask* ta=new MyTask;
+        ta->GetSock(this);
+        ta->GetAddr(_Addr);
+        ta->SetConnFd(s_accept);
+        ta->SetTaskName("sock"+to_string(Pool->GetTaskSize()));
+        Pool->AddTask(ta);
+    }
+}
+
 bool MySocket::IsLegal(string str, scfg type){
     if(str.empty()&&(type==scfg::Cert||type==scfg::Key||type==scfg::IP))return true;
     if(type==scfg::QueSize){
@@ -234,37 +318,9 @@ bool MySocket::IsLegal(string str, scfg type){
     return false;
 }
 
-int MySocket::Run(int type){
-    //1=TCP 0=UDP
-    if(type==1)server=socket(AF_INET, SOCK_STREAM, 0);
-    else server=socket(AF_INET, SOCK_DGRAM, 0);
-    if(bind(server, reinterpret_cast<SOCKADDR*>(&server_addr), sizeof(SOCKADDR))==SOCKET_ERROR){
-        _Log(BindFatal, level::Fatal);
-        throw 0;
-    }
-    if(listen(server, QueueSize)<0){
-        _Log(ListenFatal, level::Fatal);
-        throw 0;
-    }
-    else _Log(SuccessStartF+IP+":"+to_string(Port)+SuccessStartB, level::Info);
-    int len=sizeof(SOCKADDR);
-    while(true){
-        s_accept=accept(server, reinterpret_cast<SOCKADDR*>(&accept_addr), &len);
-        const string _IP(inet_ntoa(accept_addr.sin_addr));
-        const string _Port=to_string(ntohs(accept_addr.sin_port));
-        const string _Addr=_IP+":"+_Port;
-        _Log(_Addr+TryConnect, level::Info);
-        if(s_accept==SOCKET_ERROR){
-            _Log(_Addr+ConnectFatal, level::Info);
-            continue;
-        }
-        MyTask* ta=new MyTask;
-        ta->GetSock(this);
-        ta->GetAddr(_Addr);
-        ta->SetConnFd(s_accept);
-        ta->SetTaskName("sock"+to_string(Pool->GetTaskSize()));
-        Pool->AddTask(ta);
-    }
+int MySocket::Run(type _type){
+    if(_mode==mode::ipv4)v4mode(_type);
+    if(_mode==mode::ipv6)v6mode(_type);
     #ifdef __linux__
     close(server);
     #else
