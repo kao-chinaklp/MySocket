@@ -26,9 +26,13 @@ tablename留空表示使用默认名字(userinfo)\n\
 #define InitCurlFail "初始化curl失败"
 #define LoggerStart "日志系统启动成功！"
 #define GetUpdateFail "无法获取更新！"
-#define DefaultCfg "# socket（密钥文件留空表示自动生成，key-psw项留空表示使用默认密码123456，server-ip留空表示使用127.0.0.1），tablename留空表示使用默认名字(userinfo)\n\
-cert=\nkey=\nkey-psw=\nserver-ip=\nsock-port=2333\nsock-que-size=10\n\n\
-# mysql\nip=47.240.92.80\nusername=userinfo\npassword=mima123.\n\
+#define DefaultCfg "# socket\n\
+密钥文件留空表示自动生成，key-psw项留空表示使用默认密码123456；\n\
+# server-ip留空表示使用本地地址；mode项需填ipv4或ipv6，区分大小写。\n\
+cert=\nkey=\nkey-psw=\nserver-ip=\nsock-port=2333\nsock-que-size=10\nmode=ipv4\n\n\
+# mysql\n\
+# tablename留空表示使用默认名字(userinfo)。\n\
+ip=47.240.92.80\nusername=userinfo\npassword=mima123.\n\
 dbname=userinfo\ntablename=\ndb-port=3306\ndb-que-size=5\n\n\
 # 版本号（请不要更改此项）\nversion="
 #define KeyfileIncomplete "密钥文件不完整，正在重新生成..."
