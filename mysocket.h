@@ -16,6 +16,8 @@
 
 using namespace logger;
 
+enum class mode{ipv4, ipv6};
+enum class type{tcp, udp};
 enum class scfg{Cert, Key, IP, Port, QueSize};
 class MySocket;
 
@@ -47,6 +49,8 @@ class MySocket{
         deque<SSL*> SSLList;
         SOCKADDR_IN server_addr;
         SOCKADDR_IN accept_addr;
+        SOCKADDR_IN6 v6_server_addr;
+        SOCKADDR_IN6 v6_accept_addr;
         int Port;
         string IP;
         string cert;
@@ -63,7 +67,7 @@ class MySocket{
         void Init();
         void Close();
         MySSL* GetSSL();
-        int Run(int type);
+        int Run(type _type, mode _mode);
         void SendAll(char* msg);
         deque<SSL*>* GetSSLList();
         bool IsLegal(string str, scfg type);
