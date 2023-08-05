@@ -62,7 +62,7 @@ bool Account::Login(string UserName, string PassWord){
     bool State, Flag=false;
     if(!encrypt(PassWord.c_str()))
         return false;
-    db->Operate(op::Query, UserName, reinterpret_cast<const char*>(buff), &State, false, &Flag);
+    db->Operate(optype::_login, UserName, PassWord);
     while(!Flag)std::this_thread::sleep_for(std::chrono::milliseconds(10));
     if(State){
         this->UserName=UserName;

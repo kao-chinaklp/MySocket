@@ -1,16 +1,12 @@
 #include "mysocket.h"
 #include "context.h"
 
-#include <ws2tcpip.h>
+using std::ios,std::map,std::to_string;
 
-using std::ios;
-using std::map;
-using std::to_string;
-
-static map<scfg, const char*>ScfgStr{
+static const map<scfg, const char*>ScfgStr{
     {scfg::Cert, ""},
     {scfg::Key, ""},
-    {scfg::IP, "^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$"},
+    {scfg::IP, "^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$"}
 };
 
 static const map<string, scfg>SmapStr{

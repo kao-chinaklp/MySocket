@@ -5,33 +5,26 @@
 #include <regex>
 
 #include "logger.h"
-#include "connection.h"
+// #include "connection.h"
+#include "connection-new.h"
 
 using std::regex;
 
 using namespace logger;
 
-enum class op{Query, Insert, Alter};
-enum class cfg{IP, UserName, PassWord, DBName, Port, QueSize};
 class DBOperator:public CTask{
     public:
         class Info{
             public:
                 Info()=default;
-                Info(string _cmd, op _type, Logger* _Log, Connection* _db,
-                     const char* _username, const char* _psw, bool* _s, bool _mode, bool* _Flag):
-                cmd(_cmd), type(_type), nLog(_Log), db(_db),
-                UserName(_username), PassWord(_psw), State(_s), mode(_mode), Flag(_Flag){}
-                op type;
-                string cmd;
+                Info(optype _t, string str1, string str2, MyConnection* _db, Logger* _log, bool* _F, bool* _S):
+                type(_t), username(str1), password(str2), nLog(_log), db(_db), flag(_F), state(_S){}
+                optype type;
+                string username, password;
                 Logger* nLog;
-                Connection* db;
-
-                bool* Flag;
-                bool* State;
-                bool mode; // 0 == login 1 == register
-                const char* UserName;
-                const char* PassWord;
+                MyConnection* db;
+                bool* flag;
+                bool* state;
         };
 
     public:
@@ -41,7 +34,7 @@ class DBOperator:public CTask{
 
     private:
         Info info;
-        Connection* db;
+        MyConnection* db;
 };
 
 class MysqlPool{
@@ -50,18 +43,18 @@ class MysqlPool{
         MysqlPool(Logger* _L);
         ~MysqlPool();
         void Close();
-        bool IsLegal(string str, cfg type);
-        int Operate(op _t, string _username, const char* _password, bool* _s, bool mode, bool* Flag);
+        bool IsLegal(string str);
+        int Operate(optype _t, const string str1, const string str2, bool* Flag, bool* State);
 
     private:
         Logger* nLog;
-        Connection* db;
+        MyConnection* db;
         regex pattern;
         std::smatch res;
         string TableName;
+        string DatabaseName;
         CThreadPool* Pool;
         unsigned int QueueSize;
-        std::map<cfg, bool>Flag;
 };
 
 #endif

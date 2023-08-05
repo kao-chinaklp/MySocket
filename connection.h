@@ -9,15 +9,14 @@
 
 #include "mysql.h"
 
-using std::map;
-using std::string;
+using std::map,std::string;
 using namespace std::chrono;
 
 static const map<const char*, const char*>Require{
     {"id", "INT"},
     {"username", "VARCHAR(50)"},
     {"password", "VARCHAR(255)"}
-};
+};  
 
 class Connection{
     private:

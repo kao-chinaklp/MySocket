@@ -16,8 +16,8 @@
 关于配置文件\n\
 密钥文件留空表示自动生成；\n\
 key-psw项留空表示使用默认密码123456；\n\
-server-ip留空表示使用127.0.0.1；\n\
-tablename留空表示使用默认名字(userinfo)\n\
+server-ip留空表示使用本地地址；mode项需填ipv4或ipv6，区分大小写；\n\
+database项填数据库名（*.db），留空表示使用默认值（项目名）;tablename留空表示使用默认名字(userinfo)\n\
 不要更改版本号！\n\
 我已仔细阅读=false"
 #define ReadmeConfirm "请在仔细阅读同目录下readme.txt文件后将文件中“我已仔细阅读”的值设置为true再继续运行该程序。"
@@ -27,13 +27,11 @@ tablename留空表示使用默认名字(userinfo)\n\
 #define LoggerStart "日志系统启动成功！"
 #define GetUpdateFail "无法获取更新！"
 #define DefaultCfg "# socket\n\
-密钥文件留空表示自动生成，key-psw项留空表示使用默认密码123456；\n\
-# server-ip留空表示使用本地地址；mode项需填ipv4或ipv6，区分大小写。\n\
-cert=\nkey=\nkey-psw=\nserver-ip=\nsock-port=2333\nsock-que-size=10\nmode=ipv4\n\n\
-# mysql\n\
-# tablename留空表示使用默认名字(userinfo)。\n\
-ip=47.240.92.80\nusername=userinfo\npassword=mima123.\n\
-dbname=userinfo\ntablename=\ndb-port=3306\ndb-que-size=5\n\n\
+# 密钥文件留空表示自动生成，key-psw项留空表示使用默认密码123456；\n\
+# server-ip留空表示使用本地地址；mode项需填ipv4或ipv6，区分大小写；\n\
+# database项填数据库名（*.db），留空表示使用默认值（项目名）;tablename留空表示使用默认名字(userinfo)\n\
+cert=\nkey=\nkey-psw=\nserver-ip=\nsock-port=2333\nsock-que-size=10\nmode=ipv4\n\
+database=\ntablename=\ndb-que-size=3\n\n\
 # 版本号（请不要更改此项）\nversion="
 #define KeyfileIncomplete "密钥文件不完整，正在重新生成..."
 #define KeyfileWSuccess "证书成功生成！"
@@ -74,5 +72,10 @@ dbname=userinfo\ntablename=\ndb-port=3306\ndb-que-size=5\n\n\
 
 #define OperateErr "无法操作数据库，错误码："
 #define DBConnectSuccess "数据库连接成功！"
-#define DBConnectFatal "数据库连接失败！错误码："
+#define DBConnectFatal "数据库连接失败："
+#define TableCreateFailed "表创建失败："
+#define TableIllegal "检测到表不符合要求，是否立刻重建表？（Y/N）"
+#define TableRebuildFailed "表重建失败！"
+#define TableRebuildSuccess "表重建成功！"
+#define DatabaseInitFinished "数据初始化成功！"
 #define DBDisconnect "数据库连接已断开。"
