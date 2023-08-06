@@ -154,8 +154,8 @@ void Service::Init(){
     sock=new MySocket(nLog, db);
 }
 
-int Service::Run(int type){
-    sock->Run(type);
+int Service::Run(type _type){
+    sock->Run(_type);
     return 0;
 }
 

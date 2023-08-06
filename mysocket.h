@@ -17,7 +17,7 @@
 
 using namespace logger;
 
-enum class mode{ipv4, ipv6};
+enum class mode{ipv4, ipv6, unknown};
 enum class type{tcp, udp};
 enum class scfg{Cert, Key, IP, Port, QueSize, Mode};
 class MySocket;

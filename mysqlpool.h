@@ -5,8 +5,7 @@
 #include <regex>
 
 #include "logger.h"
-// #include "connection.h"
-#include "connection-new.h"
+#include "connection.h"
 
 using std::regex;
 
@@ -34,7 +33,6 @@ class DBOperator:public CTask{
 
     private:
         Info info;
-        MyConnection* db;
 };
 
 class MysqlPool{
@@ -43,10 +41,11 @@ class MysqlPool{
         MysqlPool(Logger* _L);
         ~MysqlPool();
         void Close();
-        bool IsLegal(string str);
         int Operate(optype _t, const string str1, const string str2, bool* Flag, bool* State);
+        string GetErr();
 
     private:
+        bool IsLegal(string str);
         Logger* nLog;
         MyConnection* db;
         regex pattern;

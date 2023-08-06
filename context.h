@@ -1,10 +1,11 @@
 //Global
 
-#define _Version "v0.0.3"
+#define _Version "v0.0.4"
 #define ReadmeReadingErr "读取readme文件失败！"
 #define ConfigReadingErr "读取配置文件失败！"
 #define CheckCorrectnessF "请检查 "
 #define CheckCorrectnessB " 项是否填写正确！"
+#define CheckIPCorrectness "请检查 IP 项是否填写正确！"
 
 // Service
 
@@ -42,7 +43,9 @@ database=\ntablename=\ndb-que-size=3\n\n\
 
 // Account
 
+
 #define AccountErr "未知错误！"
+#define AccountIsnExist "账号不存在！"
 #define LoginErr "账号或密码错误！"
 #define RegisterErr "账号已经被注册！"
 
@@ -60,8 +63,10 @@ database=\ntablename=\ndb-que-size=3\n\n\
 #define VersionWrong "版本不符！"
 #define ServiceClose "正在关闭服务..."
 #define SocketClose "套接字已关闭。"
+#define SocketSetFailed "端口复用设置失败！"
 #define BindSuccess "套接字绑定成功！"
 #define SuccessStartF "套接字启动成功！正在监听"
+#define SuccessStartF_v6 "套接字启动成功！正在监听["
 #define SuccessStartB "端口"
 #define TryConnect "尝试连接..."
 #define BindFatal "无法绑定指定IP和端口"

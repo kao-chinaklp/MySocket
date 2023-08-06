@@ -3,7 +3,7 @@
 
 using std::ios,std::map,std::to_string;
 
-static const map<scfg, const char*>ScfgStr{
+static map<scfg, const char*>ScfgStr{
     {scfg::Cert, ""},
     {scfg::Key, ""},
     {scfg::IP, "^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$"}
@@ -122,6 +122,7 @@ MySocket::MySocket(Logger* _L, MysqlPool* _db){
     //init
     mLog=_L;
     db=_db;
+    _mode=mode::unknown;
     Init();
     //socket
     Pool=new CThreadPool(QueueSize);
@@ -160,7 +161,7 @@ void MySocket::Init(){
     #ifdef __linux__
     ScfgStr[scfg::Cert]=ScfgStr[scfg::Key]="^[a-zA-Z0-9_\\-\\.]+\\.[a-zA-Z0-9]+$";
     #else
-    ScfgStr[scfg::Cert]=ScfgStr[scfg::Key]="^[^<>:\"/\\\\|?*\\r\\n]+$";
+    ScfgStr[scfg::Cert]=ScfgStr[scfg::Key]="^(?![\\/:*?\"<>|]).{1,255}$";
     #endif
     while(getline(file, line)){
         int Idx=line.find('=');
@@ -181,10 +182,7 @@ void MySocket::Init(){
             if(value.empty())value="privkey.pem";
             _key=value;
         }
-        else if(key=="server-ip"){
-            if(value.empty())value="127.0.0.1";
-            IP=value;
-        }
+        else if(key=="server-ip")IP=value;
         else if(key=="sock-port")Port=atoi(value.c_str());
         else if(key=="sock-que-size")QueueSize=atoi(value.c_str());
         else if(key=="mode"){
@@ -193,6 +191,14 @@ void MySocket::Init(){
         }
         else continue;
         Flag[SmapStr.find(key)->second]=true;
+    }
+    if(IP.empty()){
+        if(_mode==mode::ipv4)IP="127.0.0.1";
+        if(_mode==mode::ipv6)IP="::1";
+    }
+    if(!IsLegal(IP, scfg::IP)){
+        _Log(CheckIPCorrectness, level::Error);
+        throw 0;
     }
     for(auto &i:Flag)
         if(i.second==false){
@@ -211,13 +217,12 @@ void MySocket::Close(){
     WSACleanup();
     #endif
     _Log(ServiceClose, level::Info);
-    ssl->Close();
     _Log(SocketClose, level::Info);
     delete ssl;
 }
 
 void MySocket::v4mode(type _type){
-    int opt=1;
+    int opt=1, rs;
     int len=sizeof(SOCKADDR_IN);
     int __type=(_type==type::tcp)?SOCK_STREAM:SOCK_DGRAM;
     #ifdef __linux__
@@ -228,7 +233,13 @@ void MySocket::v4mode(type _type){
     server_addr.sin_family=AF_INET;
     server_addr.sin_port=htons(Port);
     server=socket(AF_INET, __type, 0);
-    setsockopt(server, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<const void*>(&opt), sizeof(opt));// 设置端口复用
+    #ifdef _WIN32
+    rs=setsockopt(server, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<const char*>(&opt), sizeof(opt));// 设置端口复用
+    #else
+    rs=setsockopt(server, SOL_SOCKET, SO_REUSEADDR, (&opt), sizeof(opt));
+    #endif
+    if(rs==SOCKET_ERROR)
+        _Log(SocketSetFailed, level::Warn);
     if(bind(server, reinterpret_cast<SOCKADDR*>(&server_addr), len)==SOCKET_ERROR){
         _Log(BindFatal, level::Fatal);
         throw 0;
@@ -260,6 +271,7 @@ void MySocket::v4mode(type _type){
 }
 
 void MySocket::v6mode(type _type){
+    int opt=1, rs;
     int len=sizeof(SOCKADDR_IN6);
     int __type=(_type==type::tcp)?SOCK_STREAM:SOCK_DGRAM;
     memset(&v6_server_addr, 0, len);
@@ -268,7 +280,13 @@ void MySocket::v6mode(type _type){
     v6_server_addr.sin6_family=AF_INET6;
     inet_pton(AF_INET6, IP.c_str(), &v6_accept_addr);
     server=socket(AF_INET6, __type, 0);
-    setsockopt(server, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<const void*>(&opt), sizeof(opt));// 设置端口复用
+    #ifdef _WIN32
+    rs=setsockopt(server, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<const char*>(&opt), sizeof(opt));// 设置端口复用
+    #else
+    rs=setsockopt(server, SOL_SOCKET, SO_REUSEADDR, (&opt), sizeof(opt));
+    #endif
+    if(rs==SOCKET_ERROR)
+        _Log(SocketSetFailed, level::Warn);
     if(bind(server, reinterpret_cast<SOCKADDR*>(&v6_server_addr), len)==SOCKET_ERROR){
         _Log(BindFatal, level::Fatal);
         throw 0;
@@ -277,7 +295,7 @@ void MySocket::v6mode(type _type){
         _Log(ListenFatal, level::Fatal);
         throw 0;
     }
-    else _Log(SuccessStartF+IP+":"+to_string(Port)+SuccessStartB, level::Info);
+    else _Log(SuccessStartF_v6+IP+"]:"+to_string(Port)+SuccessStartB, level::Info);
     while(true){
         s_accept=accept(server, reinterpret_cast<SOCKADDR*>(&v6_accept_addr), &len);
         char* tmp=new char[1024];
@@ -300,7 +318,7 @@ void MySocket::v6mode(type _type){
 }
 
 bool MySocket::IsLegal(string str, scfg type){
-    if(str.empty()&&(type==scfg::Cert||type==scfg::Key||type==scfg::IP))return true;
+    if(str.empty()&&(type==scfg::Cert||type==scfg::Key)||type==scfg::Mode||type==scfg::IP)return true;
     if(type==scfg::QueSize){
         if(atoi(str.c_str())<=0)return false;
         return true;

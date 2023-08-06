@@ -8,7 +8,7 @@ class Service{
         Service();
         ~Service();
         void Init();
-        int Run(int type);
+        int Run(type _type);
         bool CheckUpdate();
         bool CheckReadme();
         void GenerateCertificate(string cert, string _key);

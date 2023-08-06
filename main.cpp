@@ -8,7 +8,7 @@ int main(){
     try{
         Ser=new Service;
         Ser->Init();
-        Ser->Run(1);
+        Ser->Run(type::tcp);
     }
     catch(const int code){
         if(Ser!=nullptr)delete Ser;

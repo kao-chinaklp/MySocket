@@ -12,15 +12,30 @@ void DBOperator::GetInfo(Info _info){
 }
 
 int DBOperator::Run(){
+    int res;
     if(info.type==optype::_login){
-        int res=db->Query(info.type, info.username, info.password);
+        res=info.db->Query(info.type, info.username, info.password);
         if(res==1)(*info.state)=true;
         if(res==0)(*info.state)=false;
-        if(res==-1){
-            info.nLog->Output(db->GetErr(), level::Error);
-            return 0;
-        }
+        if(res==-1)info.nLog->Output(info.db->GetErr(), level::Error);
     }
+    if(info.type==optype::_register){
+        res=info.db->Query(info.type, info.username);
+        if(res==1)(*info.state)=true;
+        if(res==0)(*info.state)=false;
+        if(res==-1)info.nLog->Output(info.db->GetErr(), level::Error);
+    }
+    if(info.type==optype::insert){
+        res=info.db->Insert(info.username, info.password);
+        if(res!=SQLITE_OK)info.nLog->Output(info.db->GetErr(), level::Error);
+        else (*info.state)=true;
+    }
+    if(info.type==optype::alter){
+        res=info.db->Delete(info.username);
+        if(res!=SQLITE_OK)info.nLog->Output(info.db->GetErr(), level::Error);
+        else (*info.state)=true;
+    }
+    (*info.flag)=true;
     return 0;
 }
 
@@ -90,18 +105,6 @@ MysqlPool::~MysqlPool(){
     Close();
 }
 
-bool MysqlPool::IsLegal(string str){
-    string rule;
-    #ifdef __linux__
-    rule="^[a-zA-Z0-9_\\-\\.]+\\.[a-zA-Z0-9]+$";
-    #else
-    rule="^[^<>:\"/\\\\|?*\\r\\n]+$";
-    #endif
-    pattern=regex(rule);
-    if(regex_match(str, res, pattern))return true;
-    return false;
-}
-
 void MysqlPool::Close(){
     Pool->StopAll();
     nLog->Output(DBDisconnect, level::Info);
@@ -113,4 +116,21 @@ int MysqlPool::Operate(optype _t, const string str1, const string str2, bool* Fl
     ta->SetTaskName("mysql");
     Pool->AddTask(ta);
     return 0;
+}
+
+string MysqlPool::GetErr(){
+    return db->GetErr();
+}
+
+bool MysqlPool::IsLegal(string str){
+    if(str.empty())return true;
+    string rule;
+    #ifdef __linux__
+    rule="^[a-zA-Z0-9_\\-\\.]+\\.[a-zA-Z0-9]+$";
+    #else
+    rule="^(?![\\/:*?\"<>|]).{1,255}$";
+    #endif
+    pattern=regex(rule);
+    if(regex_match(str, res, pattern))return true;
+    return false;
 }
