@@ -1,67 +1,130 @@
 #include "connection.h"
 
-Connection::Connection(){
-    Conn=mysql_init(nullptr);
-}
+using std::map;
 
-Connection::~Connection(){
-    if(Conn!=nullptr)mysql_close(Conn);
-}
+static const map<colname,string>GetColname={
+    {colname::id, "ID"},
+    {colname::username, "USERNAME"},
+    {colname::password, "PASSWORD"},
+    {colname::create_at, "CREATE_AT"}
+};
 
-unsigned int Connection::GetError(){
-    return mysql_errno(Conn);
-}
+static const map<string, colname>GetColStr={
+    {"ID", colname::id},
+    {"USERNAME", colname::username},
+    {"PASSWORD", colname::password},
+    {"CREATE_AT", colname::create_at}
+};
 
-bool Connection::Create(string TableName){
-    string sql=CreateSqlF+TableName+CreateSqlB;
-    if(mysql_query(Conn, sql.c_str()))return false;
-    return true;
-}
-
-bool Connection::Update(string sql){
-    if(mysql_query(Conn, sql.c_str()))return false;
-    return true;
-}
-
-MYSQL_RES* Connection::Query(string sql){
-    if(mysql_query(Conn, sql.c_str()))return nullptr;
-    return mysql_use_result(Conn);
-}
-
-bool Connection::Init(string dbname, string TableName){
-    int state=CheckTable(dbname, TableName);
-    if(state==-1)return Create(TableName);
-    if(state==1)return false;
-    if(state==2){
-        string sql="DROP TABLE IF EXISTS "+TableName+";";
-        if(mysql_query(Conn, sql.c_str()))return false;
-        return Create(TableName);
+static int SelectCallback(void* data, int argc, char** argv, char** azColName){
+    map<string, string>* Pack=reinterpret_cast<map<string, string>*>(data);
+    for(int i=0;i<argc;i++){
+        string ColName=string(azColName[i]);
+        string Value=string(argv[i]?argv[i]:"");
+        (*Pack)[ColName]=Value;
     }
-    return true;
-}
-
-int Connection::CheckTable(string dbname, string TableName){
-    string sql="SELECT COLUMN_NAME, COLUMN_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='"+dbname+"' AND TABLE_NAME='"+TableName+"'";
-    if(mysql_query(Conn, sql.c_str()))return -1;// 表不存在
-    MYSQL_RES* res=mysql_store_result(Conn);
-    if(res==NULL)return 1;// 查询失败
-    int num=mysql_num_fields(res);
-    MYSQL_ROW row;
-    bool hasId, hasUsername, hasPassword;
-    hasId=hasUsername=hasPassword=false;
-    while(row=mysql_fetch_row(res)){
-        string name=string(row[0]);
-        string type=string(row[1]);
-        if(name=="id"&&type=="int")hasId=true;
-        if(name=="username"&&type=="varchar")hasUsername=true;
-        if(name=="password"&&type=="varchar")hasPassword=true;
-    }
-    mysql_free_result(res);
     return 0;
 }
 
-bool Connection::Connect(string IP, unsigned short port, string username, string psw, string dbname){
-    MYSQL* p=mysql_real_connect(Conn, IP.c_str(), username.c_str(),
-                                psw.c_str(), dbname.c_str(), port, nullptr, 0);
-    return p!=nullptr;
+static int CheckTableCallback(void* data, int argc, char** argv, char** azColName){
+    bool* Flag=reinterpret_cast<bool*>(data);
+    if(argc==0)(*Flag)=false;
+    else (*Flag)=true;
+    return 0;
+}
+
+static int CheckLegalityCallback(void* data, int argc, char** argv, char** azColName){
+    bool* Flag=reinterpret_cast<bool*>(data);
+    int cnt=0;
+    (*Flag)=true;
+    for(int i=0;i<argc;i++){
+        string tmp1=string(azColName[i]);
+        string tmp2=string(argv[i]);
+        if(GetColStr.find(tmp1)!=GetColStr.end())cnt++;
+        if(tmp1=="USERNAME"&&tmp2!="__index")(*Flag)=false;
+        if(tmp1=="PASSWORD"&&tmp2!="__index")(*Flag)=false;
+    }
+    if(cnt<2)(*Flag)=false;
+    else if((*Flag)!=false)(*Flag)=true;
+    return 0;
+}
+
+MyConnection::~MyConnection(){
+    sqlite3_close(db);
+}
+
+string MyConnection::OpenDatabase(const string FileName, const string TableName){
+    bool state=false;
+    int res=sqlite3_open(FileName.c_str(), &db);
+    if(res)return string(sqlite3_errmsg(db));
+    string sql="SELECT name FROM sqlite_master WHERE type='table' AND name='"+TableName+"';";
+    res=sqlite3_exec(db, sql.c_str(), CheckTableCallback, &state, &errMsg);
+    if(res!=SQLITE_OK)return GetErr();
+    if(state)return "";
+    else return "Table is not exist.";
+}
+
+int MyConnection::CreateTable(const string TableName){
+    this->TableName=TableName;
+    string sql=CreateSqlF+TableName+CreateSqlB;
+    int res=sqlite3_exec(db, sql.c_str(), NULL, NULL, &errMsg);
+    if(res!=SQLITE_OK)return res;
+    return Insert("__index", "__index");
+}
+
+int MyConnection::Insert(const string UserName, const string Password){
+    string sql="INSERT INTO TABLE "+TableName+"(USERNAME, PASSWORD)"
+               "VALUE ('"+UserName+"', '"+Password+"');";
+    return sqlite3_exec(db, sql.c_str(), NULL, NULL, &errMsg);
+}
+
+int MyConnection::Select(const colname type, const string str){
+    string sql="SELECT * FROM "+TableName+" WHERE "+GetColname.find(type)->second+" = '"+str+"';";
+    return sqlite3_exec(db, sql.c_str(), SelectCallback, reinterpret_cast<void*>(&Datapack), &errMsg);
+}
+
+int MyConnection::Update(const colname type, const string str){
+    string sql="UPDATE "+TableName+" SET "+GetColname.find(type)->second+" = '"+str+"';";
+    return sqlite3_exec(db ,sql.c_str(), NULL, NULL, &errMsg);
+}
+
+int MyConnection::Delete(const string index){
+    string sql="DELETE FROM "+TableName+" WHERE USERNAME='"+index+"';";
+    return sqlite3_exec(db, sql.c_str(), NULL, NULL, &errMsg);
+}
+
+int MyConnection::Query(const optype type, const string str1, const string str2){
+    if(type==optype::_login){
+        int res=Select(colname::username, str1);
+        if(res!=SQLITE_OK)return res;
+        if(Datapack["PASSWORD"]==str2)return 1;
+        else return 0;
+    }
+    if(type==optype::_register){
+        int res=Select(colname::username, str1);
+        if(res!=SQLITE_OK)return res;
+        if(Datapack["USERNAME"].empty())return 1;
+        else return 0;
+    }
+    return 0;
+}
+
+int MyConnection::RebuildTable(){
+    string sql="DROP TABLE "+TableName;
+    int res=sqlite3_exec(db, sql.c_str(), NULL, NULL, &errMsg);
+    if(res!=SQLITE_OK)return res;
+    return CreateTable(TableName);
+}
+
+int MyConnection::CheckTable(){
+    string sql="SELECT * FROM "+TableName+" WHERE USERNAME = '__index';";
+    bool state=false;
+    int res=sqlite3_exec(db, sql.c_str(), CheckLegalityCallback, &state, &errMsg);
+    if(res!=SQLITE_OK)return res;
+    if(state==true)return 1;
+    else return 0;
+}
+
+string MyConnection::GetErr(){
+    return string(errMsg);
 }

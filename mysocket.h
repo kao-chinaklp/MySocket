@@ -4,11 +4,12 @@
 #ifdef __linux__
 #include <unistd.h>
 #include <sys/types.h>
+#include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
-#include <sys/socket.h>
 #else
 #include <winsock2.h>
+#include <ws2tcpip.h>
 #endif
 
 #include "myssl.h"
@@ -16,7 +17,9 @@
 
 using namespace logger;
 
-enum class scfg{Cert, Key, IP, Port, QueSize};
+enum class mode{ipv4, ipv6, unknown};
+enum class type{tcp, udp};
+enum class scfg{Cert, Key, IP, Port, QueSize, Mode};
 class MySocket;
 
 class MyTask:public CTask{
@@ -47,8 +50,11 @@ class MySocket{
         deque<SSL*> SSLList;
         SOCKADDR_IN server_addr;
         SOCKADDR_IN accept_addr;
+        SOCKADDR_IN6 v6_server_addr;
+        SOCKADDR_IN6 v6_accept_addr;
         int Port;
         string IP;
+        mode _mode;
         string cert;
         string _key;
         int QueueSize;
@@ -62,8 +68,10 @@ class MySocket{
         ~MySocket();
         void Init();
         void Close();
+        void v4mode(type _type);
+        void v6mode(type _type);
         MySSL* GetSSL();
-        int Run(int type);
+        int Run(type _type);
         void SendAll(char* msg);
         deque<SSL*>* GetSSLList();
         bool IsLegal(string str, scfg type);

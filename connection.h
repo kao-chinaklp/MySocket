@@ -1,45 +1,41 @@
-#ifndef CONNECTION_H_
-#define CONNECTION_H_
+#ifndef CONNCETION_H_
+#define CONNCETONG_H_
 
-// 单个连接
+#include "sqlite3.h"
 
 #include <map>
-#include <chrono>
 #include <string>
 
-#include "mysql.h"
-
-using std::map;
 using std::string;
-using namespace std::chrono;
 
-static const map<const char*, const char*>Require{
-    {"id", "INT"},
-    {"username", "VARCHAR(50)"},
-    {"password", "VARCHAR(255)"}
-};
+enum class optype{_login, _register, insert, alter};
+enum class colname{id, username, password, create_at};
 
-class Connection{
-    private:
-        MYSQL* Conn;
-        const string CreateSqlF=
-            "CREATE TABLE ";
-        const string CreateSqlB=
-            " (id INT AUTO_INCREMENT PRIMARY KEY,"
-            "username VARCHAR(50) UNIQUE NOT NULL,"
-            "password VARCHAR(255) NOT NULL,"
-            "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);";
-
+class MyConnection{
     public:
-        Connection();
-        ~Connection();
-        unsigned int GetError();
-        bool Create(string TableName);
-        bool Update(string sql);//增删
-        MYSQL_RES* Query(string sql);//查询
-        bool Init(string dbname, string TableName);
-        int CheckTable(string dbname, string TableName);
-        bool Connect(string IP, unsigned short port, string username, string psw, string dbname);
+        MyConnection()=default;
+        ~MyConnection();
+        string OpenDatabase(const string FileName, const string TableName);
+        int CreateTable(const string TableName);
+        int Insert(const string UserName, const string PassWord);
+        int Select(const colname type, const string str);
+        int Update(const colname type, const string str);
+        int Delete(const string index);
+        int Query(const optype type, const string str1, const string str2="");
+        int RebuildTable();
+        string GetErr();
+        int CheckTable();
+
+    private:
+        string CreateSqlF="CREATE TABLE ";
+        string CreateSqlB=" (ID INT PRIMARY KEY NOT NULL, "
+                          "USERNAME VARCHAR(50) UNIQUE NOT NULL, "
+                          "PASSWOED VARCHAR(255) NOT NULL, "
+                          "CREATE_AT TIMESTAMP DEFAULT CURRENT_TIMESTAMP);";
+        sqlite3* db;
+        string TableName;
+        char* errMsg;
+        std::map<string, string>Datapack;
 };
 
 #endif

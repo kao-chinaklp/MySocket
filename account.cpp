@@ -5,6 +5,8 @@
 
 #include "context.h"
 
+using std::this_thread::sleep_for, std::chrono::microseconds;
+
 Account::Account(string username, MysqlPool* _db){
     char* err;
     UserName=username;
@@ -60,34 +62,31 @@ bool Account::encrypt(const char* msg){
 
 bool Account::Login(string UserName, string PassWord){
     bool State, Flag=false;
-    if(!encrypt(PassWord.c_str()))
-        return false;
-    db->Operate(op::Query, UserName, reinterpret_cast<const char*>(buff), &State, false, &Flag);
-    while(!Flag)std::this_thread::sleep_for(std::chrono::milliseconds(10));
-    if(State){
-        this->UserName=UserName;
-        return true;
-    }
-    else{
+    if(!encrypt(PassWord.c_str()))return false;
+    db->Operate(optype::_login, UserName, PassWord, &Flag, &State);
+    while(!Flag)sleep_for(milliseconds(10));
+    if(!State){
         Err=LoginErr;
         return false;
     }
+    this->UserName=UserName;
+    return true;
 }
 
 bool Account::Register(string UserName, string PassWord){
     bool State, Flag=false;
     if(!encrypt(PassWord.c_str()))return false;
-    db->Operate(op::Query, UserName, reinterpret_cast<const char*>(buff), &State, false, &Flag);
-    while(!Flag)std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    db->Operate(optype::_register, UserName, PassWord, &Flag, &State);
+    while(!Flag)sleep_for(milliseconds(10));
     if(!State){
         Err=RegisterErr;
         return false;
     }
-    Flag=false;
-    db->Operate(op::Insert, UserName, PassWord.c_str(), &State, NULL, &Flag);
-    while(!Flag)std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    State=Flag=false;
+    db->Operate(optype::insert, UserName, PassWord, &Flag, &State);
+    while(!Flag)sleep_for(milliseconds(10));
     if(!State){
-        Err=AccountErr;
+        Err=db->GetErr();
         return false;
     }
     this->UserName=UserName;
@@ -96,10 +95,10 @@ bool Account::Register(string UserName, string PassWord){
 
 bool Account::Logoff(string UserName){
     bool State, Flag=false;
-    db->Operate(op::Alter, UserName, "", &State, NULL, &Flag);
+    db->Operate(optype::alter, UserName, "", &Flag, &State);
     while(!Flag)std::this_thread::sleep_for(std::chrono::milliseconds(10));
     if(!State){
-        Err=AccountErr;
+        Err=db->GetErr();
         return false;
     }
     return true;

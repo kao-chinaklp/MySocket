@@ -1,67 +1,45 @@
 #include "mysqlpool.h"
 
 #include <map>
+#include <iostream>
 
 #include "context.h"
 
 using std::ios;
-using std::map;
-using std::to_string;
-
-static const map<cfg, const char*>CfgStr{
-    {cfg::IP, "^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$"},
-    {cfg::UserName, "^[-_a-zA-Z0-9]{4,16}$"},
-    {cfg::PassWord, "^[A-Za-z\\d!@#$%^&*.]{8,}$"},
-    {cfg::DBName, "^[a-zA-Z0-9_]+$"}
-};
-
-static const map<string, cfg>MapStr{
-    {"ip", cfg::IP},
-    {"username", cfg::UserName},
-    {"password", cfg::PassWord},
-    {"dbname", cfg::DBName},
-    {"db-port", cfg::Port},
-    {"db-que-size", cfg::QueSize}
-};
-
-static const map<cfg, string>GetStr{
-    {cfg::IP, "ip"},
-    {cfg::UserName, "username"},
-    {cfg::PassWord, "password"},
-    {cfg::DBName, "dbname"},
-    {cfg::Port, "db-port"},
-    {cfg::QueSize, "db-que-size"}
-};
 
 void DBOperator::GetInfo(Info _info){
     info=_info;
 }
 
 int DBOperator::Run(){
-    *(info.Flag)=true;
-    if(info.type==op::Query){
-        MYSQL_RES* res=info.db->Query(info.cmd);
-        MYSQL_ROW row;
-        int num=mysql_num_fields(res);
-        *(info.State)=true;
-        if(num>0)*(info.State)=false;// 存在
+    int res;
+    if(info.type==optype::_login){
+        res=info.db->Query(info.type, info.username, info.password);
+        if(res==1)(*info.state)=true;
+        if(res==0)(*info.state)=false;
+        if(res==-1)info.nLog->Output(info.db->GetErr(), level::Error);
     }
-    if(info.type==op::Alter||info.type==op::Insert){
-        if(!info.db->Update(info.cmd)){
-            string _info(OperateErr+to_string(info.db->GetError()));
-            info.nLog->Output(_info, level::Error);
-            *(info.State)=false;
-        }
+    if(info.type==optype::_register){
+        res=info.db->Query(info.type, info.username);
+        if(res==1)(*info.state)=true;
+        if(res==0)(*info.state)=false;
+        if(res==-1)info.nLog->Output(info.db->GetErr(), level::Error);
     }
+    if(info.type==optype::insert){
+        res=info.db->Insert(info.username, info.password);
+        if(res!=SQLITE_OK)info.nLog->Output(info.db->GetErr(), level::Error);
+        else (*info.state)=true;
+    }
+    if(info.type==optype::alter){
+        res=info.db->Delete(info.username);
+        if(res!=SQLITE_OK)info.nLog->Output(info.db->GetErr(), level::Error);
+        else (*info.state)=true;
+    }
+    (*info.flag)=true;
     return 0;
 }
 
 MysqlPool::MysqlPool(Logger* _L){
-    string IP;
-    unsigned short Port;
-    string UserName;
-    string PassWord;
-    string DBName;
     string line;
     nLog=_L;
     std::ifstream file;
@@ -76,56 +54,55 @@ MysqlPool::MysqlPool(Logger* _L){
         int EndIdx=line.find('\n', Idx);
         string key=line.substr(0, Idx);
         string value=line.substr(Idx+1, EndIdx-Idx-1);
-        if(MapStr.find(key)==MapStr.end())continue;
-        if(!IsLegal(value, MapStr.find(key)->second)){
+        if(key=="db-que-size"&&atoi(value.c_str())<=0||
+           key=="database"&&!IsLegal(value)){
             nLog->Output(CheckCorrectnessF+key+CheckCorrectnessB, level::Fatal);
             throw 0;
         }
-        if(key=="ip")IP=value;
-        else if(key=="username")UserName=value;
-        else if(key=="password")PassWord=value;
-        else if(key=="dbname")DBName=value;
-        else if(key=="tablename")TableName=value;
-        else if(key=="db-port")Port=atoi(value.c_str());
+        if(key=="tablename")TableName=value;
+        else if(key=="database")DatabaseName=value;
         else if(key=="db-que-size")QueueSize=atoi(value.c_str());
         else continue;
-        Flag[MapStr.find(key)->second]=true;
     }
     if(TableName.empty())TableName="userinfo";
-    for(auto &i:Flag)
-        if(i.second==false){
-            nLog->Output(CheckCorrectnessF+GetStr.find(i.first)->second+CheckCorrectnessB, level::Fatal);
+    if(DatabaseName.empty())DatabaseName="MySocket.db";
+    db=new MyConnection;
+    Pool=new CThreadPool(QueueSize);
+    string buf;
+    buf=db->OpenDatabase(DatabaseName, TableName);
+    if(buf.empty())nLog->Output(DBConnectSuccess, level::Info);
+    else if(buf=="Table is not exist.")
+            if(db->CreateTable(TableName)!=SQLITE_OK){
+                nLog->Output(TableCreateFailed+db->GetErr(), level::Error);
+                throw 0;
+            }
+        else {
+            nLog->Output(DBConnectFatal+buf, level::Fatal);
             throw 0;
         }
-    db=new Connection;
-    Pool=new CThreadPool(QueueSize);
-    if(db->Connect(IP, Port, UserName, PassWord, DBName))nLog->Output(DBConnectSuccess, level::Info);
-    else{
-        nLog->Output(DBConnectFatal+to_string(db->GetError()), level::Fatal);
+    int rs=db->CheckTable();
+    if(rs==-1){
+        nLog->Output(db->GetErr(), level::Error);
         throw 0;
     }
-    if(!db->Init(DBName, TableName)){
-        nLog->Output(OperateErr+to_string(db->GetError()), level::Error);
-        throw 0;
+    if(rs==0){
+        nLog->Output(TableIllegal, level::Warn);
+        string choise;
+        getline(std::cin, choise);
+        if(choise[0]=='n'||choise[0]=='N')throw 0;
+        if(choise[0]=='y'||choise[0]=='Y'){
+            if(db->RebuildTable()!=SQLITE_OK){
+                nLog->Output(TableRebuildFailed, level::Fatal);
+                throw 0;
+            }
+            nLog->Output(TableRebuildSuccess, level::Info);
+        }
     }
+    nLog->Output(DatabaseInitFinished, level::Info);
 }
 
 MysqlPool::~MysqlPool(){
     Close();
-}
-
-bool MysqlPool::IsLegal(string str, cfg type){
-    if(type==cfg::QueSize){
-        if(atoi(str.c_str())<=0)return false;
-        return true;
-    }
-    if(type==cfg::Port){
-        if(atoi(str.c_str())<=0||atoi(str.c_str())>65535)return false;
-        return true;
-    }
-    pattern=regex(CfgStr.find(type)->second);
-    if(regex_match(str, res, pattern))return true;
-    return false;
 }
 
 void MysqlPool::Close(){
@@ -133,20 +110,27 @@ void MysqlPool::Close(){
     nLog->Output(DBDisconnect, level::Info);
 }
 
-int MysqlPool::Operate(op _t, string _username, const char* _password,
-                       bool* _s, bool mode, bool* Flag){
-    string sql;
+int MysqlPool::Operate(optype _t, const string str1, const string str2, bool* Flag, bool* State){
     DBOperator* ta=new DBOperator;
-    if(_t==op::Insert)
-        sql="INSERT INTO "+TableName+" (username, password) VALUES ('"+_username+"', '"+_password+"')";
-    if(_t==op::Query&&mode==1)
-        sql="SELECT username FROM "+TableName+" WHERE username='"+_username+"'";
-    if(_t==op::Query&&mode==0)
-        sql="SELECT username FROM "+TableName+" WHERE username='"+_username+"' AND password='"+_password+"'";
-    if(_t==op::Alter)
-        sql="DELETE FROM "+TableName+" WHERE username='"+_username+"'";
-    ta->GetInfo({sql, _t, nLog, db, _username.c_str(), _password, _s, mode, Flag});
+    ta->GetInfo({_t, str1, str2, db, nLog, Flag, State});
     ta->SetTaskName("mysql");
     Pool->AddTask(ta);
     return 0;
+}
+
+string MysqlPool::GetErr(){
+    return db->GetErr();
+}
+
+bool MysqlPool::IsLegal(string str){
+    if(str.empty())return true;
+    string rule;
+    #ifdef __linux__
+    rule="^[a-zA-Z0-9_\\-\\.]+\\.[a-zA-Z0-9]+$";
+    #else
+    rule="^(?![\\/:*?\"<>|]).{1,255}$";
+    #endif
+    pattern=regex(rule);
+    if(regex_match(str, res, pattern))return true;
+    return false;
 }
