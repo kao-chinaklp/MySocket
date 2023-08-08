@@ -12,8 +12,6 @@
 #include <openssl/rsa.h>
 #ifdef __linux__
 #include <unistd.h>
-#else
-#include <windows.h>
 #endif
 
 #include <fstream>
@@ -160,6 +158,7 @@ int Service::Run(type _type){
 }
 
 bool Service::CheckUpdate(){
+    // 检查更新
     CURL* curl;
     string UserAgent;
     string url="https://api.github.com/repos/kao-chinaklp/MySocket/releases/latest";
@@ -169,22 +168,23 @@ bool Service::CheckUpdate(){
     AccessToken.append(MyToken);
     curl=curl_easy_init();
     UserAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36 Edg/115.0.1901.183";
-    curl_easy_setopt(curl, CURLOPT_USERAGENT, UserAgent.c_str());
+    curl_easy_setopt(curl, CURLOPT_USERAGENT, UserAgent.c_str());// 设置头
     curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, false);
+    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, false);// 禁用ssl，除非你有相关证书
     if(!curl){
         nLog->Output(InitCurlFail, level::Warn);
         return false;
     }
     struct curl_slist* header=nullptr;
     header=curl_slist_append(header, AccessToken.c_str());
-    curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, header);
+    curl_easy_setopt(curl, CURLOPT_URL, url.c_str());// 设置链接
+    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, header);// 设置github token
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
-    CURLcode res=curl_easy_perform(curl);
+    CURLcode res=curl_easy_perform(curl);// 获取响应
     curl_easy_cleanup(curl);
     if(res!=CURLE_OK){
+        // 获取失败
         string ErrBuf(curl_easy_strerror(res));
         nLog->Output(GetUpdateFail+ErrBuf, level::Warn);
         return false;
@@ -196,6 +196,7 @@ bool Service::CheckUpdate(){
 }
 
 bool Service::CheckReadme(){
+    // 检查使用前必读文件
     ifstream file;
     string line;
     file.open("readme.txt", ios::in);
@@ -219,6 +220,7 @@ bool Service::CheckReadme(){
 }
 
 void Service::GenerateCertificate(string cert, string _key){
+    // 生成证书
     FILE* Cacert=nullptr;
     FILE* PrivateKey=nullptr;
     char* Area=new char[16];
@@ -243,7 +245,7 @@ void Service::GenerateCertificate(string cert, string _key){
         EVP_PKEY_CTX_free(ctx);
         throw 0;
     }
-    //生成X509证书
+    // 生成X509证书
     X509_set_version(ca, 2);
     // 设置持有者信息
     ca=X509_new();
@@ -275,6 +277,7 @@ void Service::GenerateCertificate(string cert, string _key){
     }
     Cacert=fopen(cert.c_str(), "w");
     PrivateKey=fopen(_key.c_str(), "w");
+    // 写入文件
     if(PEM_write_X509(Cacert, ca)==0){
         nLog->Output(GetErrBuf(), level::Error);
         fclose(Cacert);

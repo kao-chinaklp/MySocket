@@ -1,3 +1,7 @@
+/*
+ * 日志系统相关声明
+ * 依赖于线程池
+*/
 #ifndef _LOGGER_H_
 #define _LOGGER_H_
 
@@ -15,7 +19,7 @@ using namespace std::chrono;
 namespace logger{
     enum class level{Debug, Info, Warn, Error, Fatal, Input};
     class Log{
-        // 文本缓冲区的类
+        // 文本缓冲类
         class LogStream:public std::ostringstream{
             public:
                 LogStream(Log& _log, level _level):Logger(_log), nLevel(_level){}
@@ -35,24 +39,24 @@ namespace logger{
             virtual LogStream operator()(level nLevel=level::Info);
 
         private:
-            string GetTime();
+            string GetTime();// 获取时间
             void EndLine(level nLevel, const char* msg);
-            virtual void Output(const char* tm, const char* nLevel, const char* msg)=0;
+            virtual void Output(const char* tm, const char* nLevel, const char* msg)=0;// 输出日志
 
         private:
-            mutex _lock;
+            mutex _lock;// 锁 线程安全
     };
 
-    // 控制台
+    // 控制台输出
     class ConsoleLogger:public Log{
         using Log::Log;
         const char Warn[5]="Warn";
         const char Error[6]="Error";
         const char Fatal[6]="Fatal";
-        virtual void Output(const char* tm, const char* nLevel, const char* msg);
+        void Output(const char* tm, const char* nLevel, const char* msg);
     };
 
-    // 文件
+    // 日志文件输出
     class FileLogger:public Log{
         public:
             FileLogger(string _Time);
@@ -61,7 +65,7 @@ namespace logger{
             virtual ~FileLogger();
 
         private:
-            virtual void Output(const char* tm, const char* nLevel, const char* msg);
+            void Output(const char* tm, const char* nLevel, const char* msg);
 
         private:
             ofstream _File;
@@ -80,6 +84,7 @@ namespace logger{
             ConsoleLogger ocl;
     };
     
+    // 日志协同管理类
     class Logger{
         public:
             Logger(int queue_size=5);

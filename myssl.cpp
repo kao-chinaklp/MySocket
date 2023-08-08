@@ -1,8 +1,7 @@
+/*
+ * ssl相关功能实现
+ */
 #include "myssl.h"
-
-#include <string>
-
-using std::string;
 
 string key_psw;
 
@@ -28,10 +27,11 @@ int PasswordCallback(char* buf, int size, int flag, void* userdata){
 
 bool MySSL::init(string cert, string key){
     ctx=SSL_CTX_new(TLS_server_method());
-    SSL_CTX_use_certificate_chain_file(ctx, cert.c_str());
+    SSL_CTX_use_certificate_chain_file(ctx, cert.c_str());// 使用公钥证书
+    // 设置证书密码
     SSL_CTX_set_default_passwd_cb(ctx, PasswordCallback);
     SSL_CTX_set_default_passwd_cb_userdata(ctx, nullptr);
-    SSL_CTX_use_PrivateKey_file(ctx, key.c_str(), SSL_FILETYPE_PEM);
+    SSL_CTX_use_PrivateKey_file(ctx, key.c_str(), SSL_FILETYPE_PEM);// 使用私钥证书
     if(ctx==nullptr||!SSL_CTX_check_private_key(ctx))return false;
     return true;
 }
@@ -45,5 +45,6 @@ SSL_CTX* MySSL::GetCTX(){
 }
 
 void MySSL::Close(){
+    // 释放内存
     SSL_CTX_free(ctx);
 }

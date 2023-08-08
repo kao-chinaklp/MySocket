@@ -14,6 +14,7 @@ class Account{
         string Err;
         string UserName;
         unsigned char* buff;
+        bool encrypt(const char* msg);
 
     public:
         Account(){}
@@ -21,10 +22,10 @@ class Account{
         ~Account();
         string GetErr();
         string GetName();
-        bool Logoff(string UserName);
-        bool encrypt(const char* msg);
+        bool Logoff();
         bool Login(string UserName, string PassWord);
         bool Register(string UserName, string PassWord);
+        bool ChangeInfo(const colname type, const string value);
 };
 
 #endif

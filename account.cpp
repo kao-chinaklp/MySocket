@@ -93,9 +93,21 @@ bool Account::Register(string UserName, string PassWord){
     return true;
 }
 
-bool Account::Logoff(string UserName){
+bool Account::Logoff(){
     bool State, Flag=false;
     db->Operate(optype::alter, UserName, "", &Flag, &State);
+    while(!Flag)std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    if(!State){
+        Err=db->GetErr();
+        return false;
+    }
+    return true;
+}
+
+bool Account::ChangeInfo(const colname type, const string value){
+    bool State, Flag=false;
+    if(type==colname::username)db->Operate(optype::update_u, value, "", &Flag, &State);
+    if(type==colname::password)db->Operate(optype::update_p, "", value, &Flag, &State);
     while(!Flag)std::this_thread::sleep_for(std::chrono::milliseconds(10));
     if(!State){
         Err=db->GetErr();

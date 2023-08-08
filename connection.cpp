@@ -1,7 +1,11 @@
+/*
+ * 数据库操作相关实现
+ */
 #include "connection.h"
 
 using std::map;
 
+// 获取字段名
 static const map<colname,string>GetColname={
     {colname::id, "ID"},
     {colname::username, "USERNAME"},
@@ -9,6 +13,7 @@ static const map<colname,string>GetColname={
     {colname::create_at, "CREATE_AT"}
 };
 
+// 获取配置项
 static const map<string, colname>GetColStr={
     {"ID", colname::id},
     {"USERNAME", colname::username},
@@ -16,6 +21,7 @@ static const map<string, colname>GetColStr={
     {"CREATE_AT", colname::create_at}
 };
 
+// 查询用回调函数
 static int SelectCallback(void* data, int argc, char** argv, char** azColName){
     map<string, string>* Pack=reinterpret_cast<map<string, string>*>(data);
     for(int i=0;i<argc;i++){
@@ -26,6 +32,7 @@ static int SelectCallback(void* data, int argc, char** argv, char** azColName){
     return 0;
 }
 
+// 检查表存在回调函数
 static int CheckTableCallback(void* data, int argc, char** argv, char** azColName){
     bool* Flag=reinterpret_cast<bool*>(data);
     if(argc==0)(*Flag)=false;
@@ -33,6 +40,7 @@ static int CheckTableCallback(void* data, int argc, char** argv, char** azColNam
     return 0;
 }
 
+// 检查表是否符合要求的回调函数
 static int CheckLegalityCallback(void* data, int argc, char** argv, char** azColName){
     bool* Flag=reinterpret_cast<bool*>(data);
     int cnt=0;
@@ -54,6 +62,7 @@ MyConnection::~MyConnection(){
 }
 
 string MyConnection::OpenDatabase(const string FileName, const string TableName){
+    // 打开数据库
     bool state=false;
     int res=sqlite3_open(FileName.c_str(), &db);
     if(res)return string(sqlite3_errmsg(db));
@@ -65,6 +74,7 @@ string MyConnection::OpenDatabase(const string FileName, const string TableName)
 }
 
 int MyConnection::CreateTable(const string TableName){
+    // 创建表
     this->TableName=TableName;
     string sql=CreateSqlF+TableName+CreateSqlB;
     int res=sqlite3_exec(db, sql.c_str(), NULL, NULL, &errMsg);
@@ -73,27 +83,32 @@ int MyConnection::CreateTable(const string TableName){
 }
 
 int MyConnection::Insert(const string UserName, const string Password){
+    // 插入信息
     string sql="INSERT INTO TABLE "+TableName+"(USERNAME, PASSWORD)"
                "VALUE ('"+UserName+"', '"+Password+"');";
     return sqlite3_exec(db, sql.c_str(), NULL, NULL, &errMsg);
 }
 
 int MyConnection::Select(const colname type, const string str){
+    // 查询
     string sql="SELECT * FROM "+TableName+" WHERE "+GetColname.find(type)->second+" = '"+str+"';";
     return sqlite3_exec(db, sql.c_str(), SelectCallback, reinterpret_cast<void*>(&Datapack), &errMsg);
 }
 
 int MyConnection::Update(const colname type, const string str){
+    // 更新信息
     string sql="UPDATE "+TableName+" SET "+GetColname.find(type)->second+" = '"+str+"';";
     return sqlite3_exec(db ,sql.c_str(), NULL, NULL, &errMsg);
 }
 
 int MyConnection::Delete(const string index){
+    // 删除信息
     string sql="DELETE FROM "+TableName+" WHERE USERNAME='"+index+"';";
     return sqlite3_exec(db, sql.c_str(), NULL, NULL, &errMsg);
 }
 
 int MyConnection::Query(const optype type, const string str1, const string str2){
+    // 查询信息
     if(type==optype::_login){
         int res=Select(colname::username, str1);
         if(res!=SQLITE_OK)return res;
@@ -110,6 +125,7 @@ int MyConnection::Query(const optype type, const string str1, const string str2)
 }
 
 int MyConnection::RebuildTable(){
+    // 重建表
     string sql="DROP TABLE "+TableName;
     int res=sqlite3_exec(db, sql.c_str(), NULL, NULL, &errMsg);
     if(res!=SQLITE_OK)return res;
@@ -117,6 +133,7 @@ int MyConnection::RebuildTable(){
 }
 
 int MyConnection::CheckTable(){
+    // 检查表是否符合要求
     string sql="SELECT * FROM "+TableName+" WHERE USERNAME = '__index';";
     bool state=false;
     int res=sqlite3_exec(db, sql.c_str(), CheckLegalityCallback, &state, &errMsg);

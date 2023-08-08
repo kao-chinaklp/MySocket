@@ -2,8 +2,6 @@
 
 #include <map>
 #include <regex>
-#include <ctime>
-#include <cstdlib>
 #include <cstring>
 #include <filesystem>
 
@@ -13,12 +11,8 @@
 #define RED "\033[31m"
 #define YELLOW "\033[33m"
 
-using std::map;
-using std::ios;
-using std::regex;
-using std::ostream;
-using std::fstream;
-using std::regex_replace;
+using std::map, std::ios, std::regex, std::regex_replace;
+using std::ostream, std::fstream;
 
 using namespace logger;
 using namespace std::filesystem;
@@ -41,6 +35,7 @@ Log::LogStream Log::operator()(level nLevel){
 }
 
 string Log::GetTime(){
+    // 获取时间
     string strTime;
     char str[20]={0};
     time_t tt=system_clock::to_time_t(system_clock::now());
@@ -58,6 +53,7 @@ string Log::GetTime(){
 }
 
 void Log::EndLine(level nLevel, const char* msg){
+    // 输出内容
     _lock.lock();
     Output(GetTime().c_str(), LevelStr.find(nLevel)->second, msg);
     _lock.unlock();
@@ -77,6 +73,7 @@ FileLogger::FileLogger(string _Time):Log(){
     regex express("/|:| |>|<|\"|\\*|\\?|\\|");
     regex_replace(_FileName.begin(), FileName.begin(), FileName.end(), express, "-");
     _File.open("./logs/"+_FileName, ios::app);
+    // 无法打开文件
     if(!_File.is_open()){
         printf(LogFatal);
         throw 0;
@@ -110,10 +107,13 @@ void MyLog::GetInfo(string _msg, level _Level){
 }
 
 Logger::Logger(int queue_size){
+    // 日志初始化
     path folder=current_path()/"logs";
     create_directory(folder);
+    // 创建线程池
     QueueSize=queue_size;
     Pool=new CThreadPool(QueueSize);
+    // 获取时间
     char str[20]={0};
     time_t tt=system_clock::to_time_t(system_clock::now());
     struct tm time_tm;

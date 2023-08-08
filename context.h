@@ -43,7 +43,6 @@ database=\ntablename=\ndb-que-size=3\n\n\
 
 // Account
 
-
 #define AccountErr "未知错误！"
 #define AccountIsnExist "账号不存在！"
 #define LoginErr "账号或密码错误！"
@@ -72,6 +71,9 @@ database=\ntablename=\ndb-que-size=3\n\n\
 #define BindFatal "无法绑定指定IP和端口"
 #define ListenFatal "设置监听失败！"
 #define ConnectFatal " 连接失败！"
+#define UserLogout "用户登出"
+#define UserLogoff "用户注销"
+#define UserExist "用户已经登录！"
 
 // MySQLPool
 

@@ -1,5 +1,8 @@
+/*
+ * 数据库操作相关声明
+ */
 #ifndef CONNCETION_H_
-#define CONNCETONG_H_
+#define CONNCETION_H_
 
 #include "sqlite3.h"
 
@@ -8,7 +11,7 @@
 
 using std::string;
 
-enum class optype{_login, _register, insert, alter};
+enum class optype{_login, _register, insert, alter, update_u, update_p};
 enum class colname{id, username, password, create_at};
 
 class MyConnection{
@@ -33,8 +36,8 @@ class MyConnection{
                           "PASSWOED VARCHAR(255) NOT NULL, "
                           "CREATE_AT TIMESTAMP DEFAULT CURRENT_TIMESTAMP);";
         sqlite3* db;
-        string TableName;
         char* errMsg;
+        string TableName;
         std::map<string, string>Datapack;
 };
 
