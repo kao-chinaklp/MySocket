@@ -66,7 +66,7 @@ string MyConnection::OpenDatabase(const string FileName, const string TableName)
     bool state=false;
     int res=sqlite3_open(FileName.c_str(), &db);
     if(res)return string(sqlite3_errmsg(db));
-    string sql="SELECT name FROM sqlite_master WHERE type='table' AND name='"+TableName+"';";
+    string sql="SELECT NAME FROM sqlite_master WHERE TYPE = 'table' AND NAME = '"+TableName+"';";
     res=sqlite3_exec(db, sql.c_str(), CheckTableCallback, &state, &errMsg);
     if(res!=SQLITE_OK)return GetErr();
     if(state)return "";
@@ -84,8 +84,8 @@ int MyConnection::CreateTable(const string TableName){
 
 int MyConnection::Insert(const string UserName, const string Password){
     // 插入信息
-    string sql="INSERT INTO TABLE "+TableName+"(USERNAME, PASSWORD)"
-               "VALUE ('"+UserName+"', '"+Password+"');";
+    string sql="INSERT INTO "+TableName+" (USERNAME, PASSWORD) "
+               "VALUES ('"+UserName+"', '"+Password+"');";
     return sqlite3_exec(db, sql.c_str(), NULL, NULL, &errMsg);
 }
 
