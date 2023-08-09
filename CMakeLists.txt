@@ -15,7 +15,7 @@ set(OPENSSL_ROOT_DIR "${CMAKE_SOURCE_DIR}/require")
 set(OPENSSL_USE_STATIC_LIBS TRUE)
 set(CMAKE_AR gcc-ar)
 find_package(OpenSSL REQUIRED)
-target_compile_options(MySocket PRIVATE -fdiagnostics-color=always -pedantic -O2)
+target_compile_options(MySocket PRIVATE -fdiagnostics-color=always -pedantic -fexec-charset=GBK -O2)
 target_link_options(MySocket PRIVATE -lcurl -lbcrypt -ladvapi32 -lcrypt32 -lssl -lcrypto -lgdi32 -lwldap32 -lz -lws2_32 -flto=auto -s)
 
 # set curl path
