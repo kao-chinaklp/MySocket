@@ -31,9 +31,9 @@ class MyConnection{
 
     private:
         string CreateSqlF="CREATE TABLE ";
-        string CreateSqlB=" (ID INT PRIMARY KEY NOT NULL, "
+        string CreateSqlB=" (ID INTEGER PRIMARY KEY NOT NULL, "
                           "USERNAME VARCHAR(50) UNIQUE NOT NULL, "
-                          "PASSWOED VARCHAR(255) NOT NULL, "
+                          "PASSWORD VARCHAR(255) NOT NULL, "
                           "CREATE_AT TIMESTAMP DEFAULT CURRENT_TIMESTAMP);";
         sqlite3* db;
         char* errMsg;
