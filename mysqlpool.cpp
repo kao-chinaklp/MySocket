@@ -95,7 +95,7 @@ MysqlPool::MysqlPool(Logger* _L){
     if(buf.empty())nLog->Output(DBConnectSuccess, level::Info);
     else if(buf=="Table is not exist."){
             // 表不存在
-            if(db->CreateTable(TableName)!=SQLITE_OK){
+            if(db->CreateTable()!=SQLITE_OK){
                 nLog->Output(TableCreateFailed+db->GetErr(), level::Error);
                 throw 0;
             }

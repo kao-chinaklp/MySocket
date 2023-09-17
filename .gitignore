@@ -1,7 +1,8 @@
 build/
 openssl/
 .vscode/
-require/
+requireDebug/
+requireRelease/
 connection/
 MySocket-Updater/
 token.h

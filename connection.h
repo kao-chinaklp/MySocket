@@ -18,8 +18,8 @@ class MyConnection{
     public:
         MyConnection()=default;
         ~MyConnection();
-        string OpenDatabase(const string FileName, const string TableName);
-        int CreateTable(const string TableName);
+        string OpenDatabase(const string FileName, string TableName);
+        int CreateTable();
         int Insert(const string UserName, const string PassWord);
         int Select(const colname type, const string str);
         int Update(const colname type, const string str);

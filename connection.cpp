@@ -61,21 +61,21 @@ MyConnection::~MyConnection(){
     sqlite3_close(db);
 }
 
-string MyConnection::OpenDatabase(const string FileName, const string TableName){
+string MyConnection::OpenDatabase(const string FileName, string TableName){
     // 打开数据库
     bool state=false;
+    this->TableName=TableName;
     int res=sqlite3_open(FileName.c_str(), &db);
     if(res)return string(sqlite3_errmsg(db));
-    string sql="SELECT name FROM sqlite_master WHERE type='table' AND name='"+TableName+"';";
+    string sql="SELECT name FROM sqlite_master WHERE type = 'table' AND name = '"+TableName+"';";
     res=sqlite3_exec(db, sql.c_str(), CheckTableCallback, &state, &errMsg);
     if(res!=SQLITE_OK)return GetErr();
     if(state)return "";
     else return "Table is not exist.";
 }
 
-int MyConnection::CreateTable(const string TableName){
+int MyConnection::CreateTable(){
     // 创建表
-    this->TableName=TableName;
     string sql=CreateSqlF+TableName+CreateSqlB;
     int res=sqlite3_exec(db, sql.c_str(), NULL, NULL, &errMsg);
     if(res!=SQLITE_OK)return res;
@@ -129,7 +129,7 @@ int MyConnection::RebuildTable(){
     string sql="DROP TABLE "+TableName;
     int res=sqlite3_exec(db, sql.c_str(), NULL, NULL, &errMsg);
     if(res!=SQLITE_OK)return res;
-    return CreateTable(TableName);
+    return CreateTable();
 }
 
 int MyConnection::CheckTable(){

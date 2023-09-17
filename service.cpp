@@ -5,8 +5,6 @@
  * 里面写入 #define MyToken "<your token>"
 */
 
-#define CURL_STATICLIB
-
 #include <curl/curl.h>
 #include <openssl/pem.h>
 #include <openssl/rsa.h>
